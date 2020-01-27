@@ -27,10 +27,10 @@ services:
       - FABRIC_CA_SERVER_CA_NAME=ca-police
       - FABRIC_CA_SERVER_TLS_ENABLED=true
       - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.police.example.com-cert.pem
-      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/police_CA_PRIVATE_KEY
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/Police_CA_PRIVATE_KEY
     ports:
       - "7054:7054"
-    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.police.example.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/police_CA_PRIVATE_KEY -b admin:adminpw -d'
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.police.example.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/Police_CA_PRIVATE_KEY -b admin:adminpw -d'
     volumes:
       - ./crypto-config/peerOrganizations/police.example.com/ca/:/etc/hyperledger/fabric-ca-server-config
     container_name: ca_peerPolice
@@ -44,10 +44,10 @@ services:
       - FABRIC_CA_SERVER_CA_NAME=ca-lawyers
       - FABRIC_CA_SERVER_TLS_ENABLED=true
       - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.lawyers.example.com-cert.pem
-      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/lawyers_CA_PRIVATE_KEY
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/Lawyers_CA_PRIVATE_KEY
     ports:
       - "8054:7054"
-    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.lawyers.example.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/lawyers_CA_PRIVATE_KEY -b admin:adminpw -d'
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.lawyers.example.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/Lawyers_CA_PRIVATE_KEY -b admin:adminpw -d'
     volumes:
       - ./crypto-config/peerOrganizations/lawyers.example.com/ca/:/etc/hyperledger/fabric-ca-server-config
     container_name: ca_peerLawyers
@@ -61,10 +61,10 @@ services:
       - FABRIC_CA_SERVER_CA_NAME=ca-court
       - FABRIC_CA_SERVER_TLS_ENABLED=true
       - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.court.example.com-cert.pem
-      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/court_CA_PRIVATE_KEY
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/Court_CA_PRIVATE_KEY
     ports:
       - "9054:7054"
-    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.court.example.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/court_CA_PRIVATE_KEY -b admin:adminpw -d'
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.court.example.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/Court_CA_PRIVATE_KEY -b admin:adminpw -d'
     volumes:
       - ./crypto-config/peerOrganizations/court.example.com/ca/:/etc/hyperledger/fabric-ca-server-config
     container_name: ca_peerCourt
@@ -78,10 +78,10 @@ services:
       - FABRIC_CA_SERVER_CA_NAME=ca-forensics
       - FABRIC_CA_SERVER_TLS_ENABLED=true
       - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.forensics.example.com-cert.pem
-      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/forensics_CA_PRIVATE_KEY
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/Forensics_CA_PRIVATE_KEY
     ports:
       - "10054:7054"
-    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.forensics.example.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/forensics_CA_PRIVATE_KEY -b admin:adminpw -d'
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.forensics.example.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/Forensics_CA_PRIVATE_KEY -b admin:adminpw -d'
     volumes:
       - ./crypto-config/peerOrganizations/forensics.example.com/ca/:/etc/hyperledger/fabric-ca-server-config
     container_name: ca_peerForensics

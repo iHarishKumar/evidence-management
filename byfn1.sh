@@ -37,22 +37,8 @@ function printHelp() {
   echo "Usage: "
   echo "  byfn.sh <mode> [-c <channel name>] [-t <timeout>] [-d <delay>] [-f <docker-compose-file>] [-s <dbtype>] [-l <language>] [-o <consensus-type>] [-i <imagetag>] [-a] [-n] [-v]"
   echo "    <mode> - one of 'up', 'down', 'restart', 'generate' or 'upgrade'"
-  echo "      - 'up' - bring up the network with docker-compose up"
-  echo "      - 'down' - clear the network with docker-compose down"
-  echo "      - 'restart' - restart the network"
   echo "      - 'generate' - generate required certificates and genesis block"
-  echo "      - 'upgrade'  - upgrade the network from version 1.3.x to 1.4.0"
-  echo "    -c <channel name> - channel name to use (defaults to \"mychannel\")"
-  echo "    -t <timeout> - CLI timeout duration in seconds (defaults to 10)"
-  echo "    -d <delay> - delay duration in seconds (defaults to 3)"
-  echo "    -f <docker-compose-file> - specify which docker-compose file use (defaults to docker-compose-cli.yaml)"
-  echo "    -s <dbtype> - the database backend to use: goleveldb (default) or couchdb"
-  echo "    -l <language> - the chaincode language: golang (default) or node"
-  echo "    -o <consensus-type> - the consensus-type of the ordering service: solo (default), kafka, or etcdraft"
-  echo "    -i <imagetag> - the tag to be used to launch the network (defaults to \"latest\")"
-  echo "    -a - launch certificate authorities (no certificate authorities are launched by default)"
-  echo "    -n - do not deploy chaincode (abstore chaincode is deployed by default)"
-  echo "    -v - verbose mode"
+
   echo "  byfn.sh -h (print this message)"
   echo
   echo "Typically, one would first generate the required certificates and "
@@ -89,115 +75,7 @@ function askProceed() {
   esac
 }
 
-# Obtain CONTAINER_IDS and remove them
-# TODO Might want to make this optional - could clear other containers
-function clearContainers() {
-  CONTAINER_IDS=$(docker ps -a | awk '($2 ~ /dev-peer.*/) {print $1}')
-  if [ -z "$CONTAINER_IDS" -o "$CONTAINER_IDS" == " " ]; then
-    echo "---- No containers available for deletion ----"
-  else
-    docker rm -f $CONTAINER_IDS
-  fi
-}
 
-# Delete any images that were generated as a part of this setup
-# specifically the following images are often left behind:
-# TODO list generated image naming patterns
-function removeUnwantedImages() {
-  DOCKER_IMAGE_IDS=$(docker images | awk '($1 ~ /dev-peer.*/) {print $3}')
-  if [ -z "$DOCKER_IMAGE_IDS" -o "$DOCKER_IMAGE_IDS" == " " ]; then
-    echo "---- No images available for deletion ----"
-  else
-    docker rmi -f $DOCKER_IMAGE_IDS
-  fi
-}
-
-# Versions of fabric known not to work with this release of first-network
-BLACKLISTED_VERSIONS="^1\.0\. ^1\.1\.0-preview ^1\.1\.0-alpha"
-
-# Do some basic sanity checking to make sure that the appropriate versions of fabric
-# binaries/images are available.  In the future, additional checking for the presence
-# of go or other items could be added.
-function checkPrereqs() {
-  # Note, we check configtxlator externally because it does not require a config file, and peer in the
-  # docker image because of FAB-8551 that makes configtxlator return 'development version' in docker
-  LOCAL_VERSION=$(configtxlator version | sed -ne 's/ Version: //p')
-  DOCKER_IMAGE_VERSION=$(docker run --rm hyperledger/fabric-tools:$IMAGETAG peer version | sed -ne 's/ Version: //p' | head -1)
-
-  echo "LOCAL_VERSION=$LOCAL_VERSION"
-  echo "DOCKER_IMAGE_VERSION=$DOCKER_IMAGE_VERSION"
-
-  if [ "$LOCAL_VERSION" != "$DOCKER_IMAGE_VERSION" ]; then
-    echo "=================== WARNING ==================="
-    echo "  Local fabric binaries and docker images are  "
-    echo "  out of  sync. This may cause problems.       "
-    echo "==============================================="
-  fi
-
-  for UNSUPPORTED_VERSION in $BLACKLISTED_VERSIONS; do
-    echo "$LOCAL_VERSION" | grep -q $UNSUPPORTED_VERSION
-    if [ $? -eq 0 ]; then
-      echo "ERROR! Local Fabric binary version of $LOCAL_VERSION does not match this newer version of BYFN and is unsupported. Either move to a later version of Fabric or checkout an earlier version of fabric-samples."
-      exit 1
-    fi
-
-    echo "$DOCKER_IMAGE_VERSION" | grep -q $UNSUPPORTED_VERSION
-    if [ $? -eq 0 ]; then
-      echo "ERROR! Fabric Docker image version of $DOCKER_IMAGE_VERSION does not match this newer version of BYFN and is unsupported. Either move to a later version of Fabric or checkout an earlier version of fabric-samples."
-      exit 1
-    fi
-  done
-}
-
-# Generate the needed certificates, the genesis block and start the network.
-function networkUp() {
-  checkPrereqs
-  # generate artifacts if they don't exist
-  if [ ! -d "crypto-config" ]; then
-    generateCerts
-    replacePrivateKey
-    generateChannelArtifacts
-  fi
-  COMPOSE_FILES="-f ${COMPOSE_FILE}"
-  if [ "${CERTIFICATE_AUTHORITIES}" == "true" ]; then
-    COMPOSE_FILES="${COMPOSE_FILES} -f ${COMPOSE_FILE_CA}"
-    export BYFN_CA1_PRIVATE_KEY=$(cd crypto-config/peerOrganizations/buyer.example.com/ca && ls *_sk)
-    export BYFN_CA2_PRIVATE_KEY=$(cd crypto-config/peerOrganizations/seller.example.com/ca && ls *_sk)
-  fi
-  if [ "${CONSENSUS_TYPE}" == "kafka" ]; then
-    COMPOSE_FILES="${COMPOSE_FILES} -f ${COMPOSE_FILE_KAFKA}"
-  elif [ "${CONSENSUS_TYPE}" == "etcdraft" ]; then
-    COMPOSE_FILES="${COMPOSE_FILES} -f ${COMPOSE_FILE_RAFT2}"
-  fi
-  if [ "${IF_COUCHDB}" == "couchdb" ]; then
-    COMPOSE_FILES="${COMPOSE_FILES} -f ${COMPOSE_FILE_COUCH}"
-  fi
-  IMAGE_TAG=$IMAGETAG docker-compose ${COMPOSE_FILES} up -d 2>&1
-  docker ps -a
-  if [ $? -ne 0 ]; then
-    echo "ERROR !!!! Unable to start network"
-    exit 1
-  fi
-
-  if [ "$CONSENSUS_TYPE" == "kafka" ]; then
-    sleep 1
-    echo "Sleeping 10s to allow $CONSENSUS_TYPE cluster to complete booting"
-    sleep 9
-  fi
-
-  if [ "$CONSENSUS_TYPE" == "etcdraft" ]; then
-    sleep 1
-    echo "Sleeping 15s to allow $CONSENSUS_TYPE cluster to complete booting"
-    sleep 14
-  fi
-
-  # now run the end to end script
-  docker exec cli scripts/script.sh $CHANNEL_NAME $CLI_DELAY $LANGUAGE $CLI_TIMEOUT $VERBOSE $NO_CHAINCODE
-  if [ $? -ne 0 ]; then
-    echo "ERROR !!!! Test failed"
-    exit 1
-  fi
-}
 
 
 # Using docker-compose-e2e-template.yaml, replace constants with private key file names
@@ -224,9 +102,11 @@ function replacePrivateKey() {
   for x in ${PEERS[@]}
   do
     orgName="${x}.example.com"
-    caName="${x}_CA_PRIVATE_KEY"
+    caps="${x,,}"
+    caps="${caps^}"
+    caName="${caps}_CA_PRIVATE_KEY"
     
-    if [ $i -gt 1 ]; then
+    if [ $i -gt 0 ]; then
       cd ${CURRENT_DIR}/crypto-config/peerOrganizations/$orgName/ca/
       PRIV_KEY=$(ls *_sk)
       sed $OPTS "s/${caName}/${PRIV_KEY}/g" ${CURRENT_DIR}/docker-compose-e2e.yaml
@@ -281,8 +161,6 @@ function generateCerts() {
     exit 1
   fi
   echo
-  echo "Generate CCP files for Buyer and Seller"
-  ./ccp-generate.sh
 }
 
 # The `configtxgen tool is used to create four artifacts: orderer **bootstrap
@@ -371,7 +249,7 @@ function generateChannelArtifacts() {
   echo "len: ${len}"
   for x in ${PEERS[@]}
   do
-    if [ $i -gt 1 ]; then
+    if [ $i -gt 0 ]; then
       caps="${x,,}"
       caps="${caps^}"
       chAr="${caps}MSPanchors.tx"
@@ -392,62 +270,18 @@ function generateChannelArtifacts() {
     fi
       i=$((i + 1))
   done
-
-
-#   echo
-#   echo "#################################################################"
-#   echo "#######    Generating anchor peer update for BuyerMSP   ##########"
-#   echo "#################################################################"
-#   set -x
-#   configtxgen -profile FourOrgsChannel -outputAnchorPeersUpdate \
-#     ./channel-artifacts/BuyerMSPanchors.tx -channelID $CHANNEL_NAME -asOrg BuyerMSP
-#   res=$?
-#   set +x
-#   if [ $res -ne 0 ]; then
-#     echo "Failed to generate anchor peer update for BuyerMSP..."
-#     exit 1
-#   fi
-
-#   echo
-#   echo "#################################################################"
-#   echo "#######    Generating anchor peer update for SellerMSP   ##########"
-#   echo "#################################################################"
-#   set -x
-#   configtxgen -profile FourOrgsChannel -outputAnchorPeersUpdate \
-#     ./channel-artifacts/SellerMSPanchors.tx -channelID $CHANNEL_NAME -asOrg SellerMSP
-#   res=$?
-#   set +x
-#   if [ $res -ne 0 ]; then
-#     echo "Failed to generate anchor peer update for SellerMSP..."
-#     exit 1
-#   fi
   echo
 }
 
 # Obtain the OS and Architecture string that will be used to select the correct
 # native binaries for your platform, e.g., darwin-amd64 or linux-amd64
 OS_ARCH=$(echo "$(uname -s | tr '[:upper:]' '[:lower:]' | sed 's/mingw64_nt.*/windows/')-$(uname -m | sed 's/x86_64/amd64/g')" | awk '{print tolower($0)}')
-# timeout duration - the duration the CLI should wait for a response from
-# another container before giving up
-CLI_TIMEOUT=10
-# default for delay between commands
-CLI_DELAY=3
+
 # system channel name defaults to "byfn-sys-channel"
 SYS_CHANNEL="byfn-sys-channel"
 # channel name defaults to "mychannel"
 CHANNEL_NAME="mychannel"
-# use this as the default docker-compose yaml definition
-COMPOSE_FILE=docker-compose-cli.yaml
-#
-COMPOSE_FILE_COUCH=base/docker-compose-base.yaml
-# org3 docker compose file
-COMPOSE_FILE_ORG3=docker-compose-org3.yaml
-# kafka and zookeeper compose file
-COMPOSE_FILE_KAFKA=docker-compose-kafka.yaml
-# two additional etcd/raft orderers
-COMPOSE_FILE_RAFT2=docker-compose-etcdraft2.yaml
-# certificate authorities compose file
-COMPOSE_FILE_CA=docker-compose-ca.yaml
+
 #
 # use golang as the default language for chaincode
 LANGUAGE=golang
@@ -478,16 +312,8 @@ CURRENT_DIR=${PWD}
 
 shift
 # Determine whether starting, stopping, restarting, generating or upgrading
-if [ "$MODE" == "up" ]; then
-  EXPMODE="Starting"
-elif [ "$MODE" == "down" ]; then
-  EXPMODE="Stopping"
-elif [ "$MODE" == "restart" ]; then
-  EXPMODE="Restarting"
-elif [ "$MODE" == "generate" ]; then
+if [ "$MODE" == "generate" ]; then
   EXPMODE="Generating certs and genesis block"
-elif [ "$MODE" == "upgrade" ]; then
-  EXPMODE="Upgrading the network"
 else
   printHelp
   exit 1
@@ -536,31 +362,15 @@ while getopts "h?c:t:d:f:s:l:i:o:anv" opt; do
 done
 
 
-# Announce what was requested
-
-if [ "${IF_COUCHDB}" == "couchdb" ]; then
-  echo
-  echo "${EXPMODE} for channel '${CHANNEL_NAME}' with CLI timeout of '${CLI_TIMEOUT}' seconds and CLI delay of '${CLI_DELAY}' seconds and using database '${IF_COUCHDB}'"
-else
-  echo "${EXPMODE} for channel '${CHANNEL_NAME}' with CLI timeout of '${CLI_TIMEOUT}' seconds and CLI delay of '${CLI_DELAY}' seconds"
-fi
 # ask for confirmation to proceed
 askProceed
 
 #Create the network using docker compose
-if [ "${MODE}" == "up" ]; then
-  networkUp
-elif [ "${MODE}" == "down" ]; then ## Clear the network
-  networkDown
-elif [ "${MODE}" == "generate" ]; then ## Generate Artifacts
+
+if [ "${MODE}" == "generate" ]; then ## Generate Artifacts
   generateCerts
   replacePrivateKey
   generateChannelArtifacts
-elif [ "${MODE}" == "restart" ]; then ## Restart the network
-  networkDown
-  networkUp
-elif [ "${MODE}" == "upgrade" ]; then ## Upgrade the network from version 1.2.x to 1.3.x
-  upgradeNetwork
 else
   printHelp
   exit 1
