@@ -1,0 +1,14 @@
+CONTAINER ID        IMAGE                              COMMAND                  CREATED             STATUS              PORTS                      NAMES
+af97f852039a        hyperledger/fabric-peer:1.4.3      "peer node start"        21 seconds ago      Up 18 seconds       0.0.0.0:14051->14051/tcp   peer1.court.example.com
+22887e9c23b4        hyperledger/fabric-ca:1.4.3        "sh -c 'fabric-ca-se…"   21 seconds ago      Up 12 seconds       0.0.0.0:9054->7054/tcp     ca_peerCourt
+2c609d13c9cf        hyperledger/fabric-peer:1.4.3      "peer node start"        21 seconds ago      Up 17 seconds       0.0.0.0:7051->7051/tcp     peer0.police.example.com
+007fd9eb89e4        hyperledger/fabric-ca:1.4.3        "sh -c 'fabric-ca-se…"   21 seconds ago      Up 14 seconds       0.0.0.0:10054->7054/tcp    ca_peerForensics
+ca65b5f29db1        hyperledger/fabric-peer:1.4.3      "peer node start"        21 seconds ago      Up 13 seconds       0.0.0.0:8051->8051/tcp     peer1.police.example.com
+9dacb9f6e13e        hyperledger/fabric-peer:1.4.3      "peer node start"        21 seconds ago      Up 13 seconds       0.0.0.0:12051->12051/tcp   peer1.lawyers.example.com
+747134b562f9        hyperledger/fabric-ca:1.4.3        "sh -c 'fabric-ca-se…"   21 seconds ago      Up 12 seconds       0.0.0.0:8054->7054/tcp     ca_peerLawyers
+b56494826f8b        hyperledger/fabric-ca:1.4.3        "sh -c 'fabric-ca-se…"   21 seconds ago      Up 17 seconds       0.0.0.0:7054->7054/tcp     ca_peerPolice
+58b1f8a2c489        hyperledger/fabric-orderer:1.4.3   "orderer"                21 seconds ago      Up 15 seconds       0.0.0.0:7050->7050/tcp     orderer.example.com
+a6a5438de6dc        hyperledger/fabric-peer:1.4.3      "peer node start"        21 seconds ago      Up 15 seconds       0.0.0.0:13051->13051/tcp   peer0.court.example.com
+c85fdf3d3a9d        hyperledger/fabric-peer:1.4.3      "peer node start"        21 seconds ago      Up 11 seconds       0.0.0.0:9051->9051/tcp     peer0.forensics.example.com
+9e4db041876e        hyperledger/fabric-peer:1.4.3      "peer node start"        21 seconds ago      Up 12 seconds       0.0.0.0:10051->10051/tcp   peer1.forensics.example.com
+c0a16e474ff7        hyperledger/fabric-peer:1.4.3      "peer node start"        21 seconds ago      Up 17 seconds       0.0.0.0:11051->11051/tcp   peer0.lawyers.example.com
