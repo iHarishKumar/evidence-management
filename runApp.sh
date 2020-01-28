@@ -55,10 +55,12 @@ function installNodeModules() {
 }
 
 export IMAGE_TAG=1.4.3
-export COMPOSE_PROJECT_NAME=evidence-management
+export COMPOSE_PROJECT_NAME=$1
+
+echo "Length: ${@}"
 
 restartNetwork
 
-installNodeModules
+#installNodeModules
 
-PORT=4000 node app
+#PORT=4000 node app
