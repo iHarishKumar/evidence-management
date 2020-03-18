@@ -1,3 +1,6 @@
 logs
 crypto-config
 sample.yaml
+node_modules
+channel-artifacts
+fabric-client-kv-*

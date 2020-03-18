@@ -36,7 +36,7 @@ function restartNetwork() {
 	dkrm
 
 	#Cleanup the stores
-	rm -rf ./fabric-client-kv-org*
+	rm -rf ./fabric-client-kv-*
 
 	#Start the network
 	docker-compose -f docker-compose-e2e.yaml up -d
@@ -61,6 +61,6 @@ echo "Length: ${@}"
 
 restartNetwork
 
-#installNodeModules
+installNodeModules
 
 #PORT=4000 node app

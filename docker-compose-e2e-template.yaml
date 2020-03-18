@@ -24,7 +24,7 @@ services:
     image: hyperledger/fabric-ca:$IMAGE_TAG
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
-      - FABRIC_CA_SERVER_CA_NAME=ca-police
+      - FABRIC_CA_SERVER_CA_NAME=ca_peerPolice
       - FABRIC_CA_SERVER_TLS_ENABLED=true
       - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.police.example.com-cert.pem
       - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/Police_CA_PRIVATE_KEY
@@ -33,6 +33,7 @@ services:
     command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.police.example.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/Police_CA_PRIVATE_KEY -b admin:adminpw -d'
     volumes:
       - ./crypto-config/peerOrganizations/police.example.com/ca/:/etc/hyperledger/fabric-ca-server-config
+      - ./artifacts/ca-config/police/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
     container_name: ca_peerPolice
     networks:
       - byfn
@@ -41,7 +42,7 @@ services:
     image: hyperledger/fabric-ca:$IMAGE_TAG
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
-      - FABRIC_CA_SERVER_CA_NAME=ca-lawyers
+      - FABRIC_CA_SERVER_CA_NAME=ca_peerLawyers
       - FABRIC_CA_SERVER_TLS_ENABLED=true
       - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.lawyers.example.com-cert.pem
       - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/Lawyers_CA_PRIVATE_KEY
@@ -50,6 +51,7 @@ services:
     command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.lawyers.example.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/Lawyers_CA_PRIVATE_KEY -b admin:adminpw -d'
     volumes:
       - ./crypto-config/peerOrganizations/lawyers.example.com/ca/:/etc/hyperledger/fabric-ca-server-config
+      - ./artifacts/ca-config/lawyers/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
     container_name: ca_peerLawyers
     networks:
       - byfn
@@ -58,7 +60,7 @@ services:
     image: hyperledger/fabric-ca:$IMAGE_TAG
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
-      - FABRIC_CA_SERVER_CA_NAME=ca-court
+      - FABRIC_CA_SERVER_CA_NAME=ca_peerCourt
       - FABRIC_CA_SERVER_TLS_ENABLED=true
       - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.court.example.com-cert.pem
       - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/Court_CA_PRIVATE_KEY
@@ -67,6 +69,7 @@ services:
     command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.court.example.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/Court_CA_PRIVATE_KEY -b admin:adminpw -d'
     volumes:
       - ./crypto-config/peerOrganizations/court.example.com/ca/:/etc/hyperledger/fabric-ca-server-config
+      - ./artifacts/ca-config/court/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
     container_name: ca_peerCourt
     networks:
       - byfn
@@ -75,7 +78,7 @@ services:
     image: hyperledger/fabric-ca:$IMAGE_TAG
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
-      - FABRIC_CA_SERVER_CA_NAME=ca-forensics
+      - FABRIC_CA_SERVER_CA_NAME=ca_peerForensics
       - FABRIC_CA_SERVER_TLS_ENABLED=true
       - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.forensics.example.com-cert.pem
       - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/Forensics_CA_PRIVATE_KEY
@@ -84,6 +87,7 @@ services:
     command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.forensics.example.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/Forensics_CA_PRIVATE_KEY -b admin:adminpw -d'
     volumes:
       - ./crypto-config/peerOrganizations/forensics.example.com/ca/:/etc/hyperledger/fabric-ca-server-config
+      - ./artifacts/ca-config/forensics/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
     container_name: ca_peerForensics
     networks:
       - byfn
@@ -96,13 +100,33 @@ services:
     networks:
       - byfn
 
+  couchdb0:
+    container_name: couchdb0
+    image: hyperledger/fabric-couchdb
+    # Populate the COUCHDB_USER and COUCHDB_PASSWORD to set an admin user and password
+    # for CouchDB.  This will prevent CouchDB from operating in an "Admin Party" mode.
+    environment:
+      - COUCHDB_USER=
+      - COUCHDB_PASSWORD=
+    # Comment/Uncomment the port mapping if you want to hide/expose the CouchDB service,
+    # for example map it to utilize Fauxton User Interface in dev environments.
+    ports:
+      - "5984:5984"
+    networks:
+      - byfn
+
   peer0.police.example.com:
     container_name: peer0.police.example.com
+    environment:
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb0:5984
     extends:
       file:  base/docker-compose-base.yaml
       service: peer0.police.example.com
     networks:
       - byfn
+    depends_on:
+      - couchdb0
 
   peer1.police.example.com:
     container_name: peer1.police.example.com
@@ -112,13 +136,33 @@ services:
     networks:
       - byfn
 
+  couchdb1:
+    container_name: couchdb1
+    image: hyperledger/fabric-couchdb
+    # Populate the COUCHDB_USER and COUCHDB_PASSWORD to set an admin user and password
+    # for CouchDB.  This will prevent CouchDB from operating in an "Admin Party" mode.
+    environment:
+      - COUCHDB_USER=
+      - COUCHDB_PASSWORD=
+    # Comment/Uncomment the port mapping if you want to hide/expose the CouchDB service,
+    # for example map it to utilize Fauxton User Interface in dev environments.
+    ports:
+      - "6984:5984"
+    networks:
+      - byfn
+
   peer0.lawyers.example.com:
     container_name: peer0.lawyers.example.com
+    environment:
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb1:5984
     extends:
       file:  base/docker-compose-base.yaml
       service: peer0.lawyers.example.com
     networks:
       - byfn
+    depends_on:
+      - couchdb1
 
   peer1.lawyers.example.com:
     container_name: peer1.lawyers.example.com
@@ -128,13 +172,33 @@ services:
     networks:
       - byfn
 
+  couchdb2:
+    container_name: couchdb2
+    image: hyperledger/fabric-couchdb
+    # Populate the COUCHDB_USER and COUCHDB_PASSWORD to set an admin user and password
+    # for CouchDB.  This will prevent CouchDB from operating in an "Admin Party" mode.
+    environment:
+      - COUCHDB_USER=
+      - COUCHDB_PASSWORD=
+    # Comment/Uncomment the port mapping if you want to hide/expose the CouchDB service,
+    # for example map it to utilize Fauxton User Interface in dev environments.
+    ports:
+      - "7984:5984"
+    networks:
+      - byfn
+
   peer0.forensics.example.com:
     container_name: peer0.forensics.example.com
+    environment:
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb2:5984
     extends:
       file:  base/docker-compose-base.yaml
       service: peer0.forensics.example.com
     networks:
       - byfn
+    depends_on:
+      - couchdb2
 
   peer1.forensics.example.com:
     container_name: peer1.forensics.example.com
@@ -144,13 +208,33 @@ services:
     networks:
       - byfn
 
+  couchdb3:
+    container_name: couchdb3
+    image: hyperledger/fabric-couchdb
+    # Populate the COUCHDB_USER and COUCHDB_PASSWORD to set an admin user and password
+    # for CouchDB.  This will prevent CouchDB from operating in an "Admin Party" mode.
+    environment:
+      - COUCHDB_USER=
+      - COUCHDB_PASSWORD=
+    # Comment/Uncomment the port mapping if you want to hide/expose the CouchDB service,
+    # for example map it to utilize Fauxton User Interface in dev environments.
+    ports:
+      - "8984:5984"
+    networks:
+      - byfn
+
   peer0.court.example.com:
     container_name: peer0.court.example.com
+    environment:
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb3:5984
     extends:
       file:  base/docker-compose-base.yaml
       service: peer0.court.example.com
     networks:
       - byfn
+    depends_on:
+      - couchdb3
 
   peer1.court.example.com:
     container_name: peer1.court.example.com

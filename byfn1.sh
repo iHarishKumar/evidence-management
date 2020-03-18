@@ -1,33 +1,3 @@
-#!/bin/bash
-#
-# Copyright IBM Corp All Rights Reserved
-#
-# SPDX-License-Identifier: Apache-2.0
-#
-
-# This script will orchestrate a sample end-to-end execution of the Hyperledger
-# Fabric network.
-#
-# The end-to-end verification provisions a sample Fabric network consisting of
-# two organizations, each maintaining two peers, and a “solo” ordering service.
-#
-# This verification makes use of two fundamental tools, which are necessary to
-# create a functioning transactional network with digital signature validation
-# and access control:
-#
-# * cryptogen - generates the x509 certificates used to identify and
-#   authenticate the various components in the network.
-# * configtxgen - generates the requisite configuration artifacts for orderer
-#   bootstrap and channel creation.
-#
-# Each tool consumes a configuration yaml file, within which we specify the topology
-# of our network (cryptogen) and the location of our certificates for various
-# configuration operations (configtxgen).  Once the tools have been successfully run,
-# we are able to launch our network.  More detail on the tools and the structure of
-# the network will be provided later in this document.  For now, let's get going...
-
-# prepending $PWD/../bin to PATH to ensure we are picking up the correct binaries
-# this may be commented out to resolve installed version of tools if desired
 export PATH=${PWD}/../bin:${PWD}:$PATH
 export FABRIC_CFG_PATH=${PWD}
 export VERBOSE=false
@@ -35,47 +5,8 @@ export VERBOSE=false
 # Print the usage message
 function printHelp() {
   echo "Usage: "
-  echo "  byfn.sh <mode> [-c <channel name>] [-t <timeout>] [-d <delay>] [-f <docker-compose-file>] [-s <dbtype>] [-l <language>] [-o <consensus-type>] [-i <imagetag>] [-a] [-n] [-v]"
-  echo "    <mode> - one of 'up', 'down', 'restart', 'generate' or 'upgrade'"
-  echo "      - 'generate' - generate required certificates and genesis block"
-
-  echo "  byfn.sh -h (print this message)"
-  echo
-  echo "Typically, one would first generate the required certificates and "
-  echo "genesis block, then bring up the network. e.g.:"
-  echo
-  echo "	byfn.sh generate -c mychannel"
-  echo "	byfn.sh up -c mychannel -s couchdb"
-  echo "        byfn.sh up -c mychannel -s couchdb -i 1.4.0"
-  echo "	byfn.sh up -l node"
-  echo "	byfn.sh down -c mychannel"
-  echo "        byfn.sh upgrade -c mychannel"
-  echo
-  echo "Taking all defaults:"
-  echo "	byfn.sh generate"
-  echo "	byfn.sh up"
-  echo "	byfn.sh down"
+  echo "bash byfn1.sh generate police lawyers forensics court"
 }
-
-# Ask user for confirmation to proceed
-function askProceed() {
-  read -p "Continue? [Y/n] " ans
-  case "$ans" in
-  y | Y | "")
-    echo "proceeding ..."
-    ;;
-  n | N)
-    echo "exiting..."
-    exit 1
-    ;;
-  *)
-    echo "invalid response"
-    askProceed
-    ;;
-  esac
-}
-
-
 
 
 # Using docker-compose-e2e-template.yaml, replace constants with private key file names
@@ -93,6 +24,7 @@ function replacePrivateKey() {
 
   # Copy the template to the file that will be modified to add the private key
   cp ${CURRENT_DIR}/docker-compose-e2e-template.yaml ${CURRENT_DIR}/docker-compose-e2e.yaml
+  cp ${CURRENT_DIR}/artifacts/network-config-template.yaml ${CURRENT_DIR}/artifacts/network-config.yaml
 
   # The next steps will replace the template's contents with the
   # actual values of the private key file names for the two CAs.
@@ -105,11 +37,15 @@ function replacePrivateKey() {
     caps="${x,,}"
     caps="${caps^}"
     caName="${caps}_CA_PRIVATE_KEY"
-    
+    keyStore="${caps}_KEYSTORE"
     if [ $i -gt 0 ]; then
       cd ${CURRENT_DIR}/crypto-config/peerOrganizations/$orgName/ca/
       PRIV_KEY=$(ls *_sk)
       sed $OPTS "s/${caName}/${PRIV_KEY}/g" ${CURRENT_DIR}/docker-compose-e2e.yaml
+
+      cd ${CURRENT_DIR}/crypto-config/peerOrganizations/$orgName/users/Admin@${x}.example.com/msp/keystore
+      PRIV_KEY=$(ls *_sk)
+      sed $OPTS "s/${keyStore}/${PRIV_KEY}/g" ${CURRENT_DIR}/artifacts/network-config.yaml
     fi
     i=$((i + 1))
   done
@@ -120,24 +56,6 @@ function replacePrivateKey() {
   fi
 }
 
-# We will use the cryptogen tool to generate the cryptographic material (x509 certs)
-# for our various network entities.  The certificates are based on a standard PKI
-# implementation where validation is achieved by reaching a common trust anchor.
-#
-# Cryptogen consumes a file - ``crypto-config.yaml`` - that contains the network
-# topology and allows us to generate a library of certificates for both the
-# Organizations and the components that belong to those Organizations.  Each
-# Organization is provisioned a unique root certificate (``ca-cert``), that binds
-# specific components (peers and orderers) to that Org.  Transactions and communications
-# within Fabric are signed by an entity's private key (``keystore``), and then verified
-# by means of a public key (``signcerts``).  You will notice a "count" variable within
-# this file.  We use this to specify the number of peers per Organization; in our
-# case it's two peers per Org.  The rest of this template is extremely
-# self-explanatory.
-#
-# After we run the tool, the certs will be parked in a folder titled ``crypto-config``.
-
-# Generates Org certs using cryptogen tool
 function generateCerts() {
   which cryptogen
   if [ "$?" -ne 0 ]; then
@@ -163,44 +81,6 @@ function generateCerts() {
   echo
 }
 
-# The `configtxgen tool is used to create four artifacts: orderer **bootstrap
-# block**, fabric **channel configuration transaction**, and two **anchor
-# peer transactions** - one for each Peer Org.
-#
-# The orderer block is the genesis block for the ordering service, and the
-# channel transaction file is broadcast to the orderer at channel creation
-# time.  The anchor peer transactions, as the name might suggest, specify each
-# Org's anchor peer on this channel.
-#
-# Configtxgen consumes a file - ``configtx.yaml`` - that contains the definitions
-# for the sample network. There are three members - one Orderer Org (``OrdererOrg``)
-# and two Peer Orgs (``Buyer`` & ``Seller``) each managing and maintaining two peer nodes.
-# This file also specifies a consortium - ``SampleConsortium`` - consisting of our
-# two Peer Orgs.  Pay specific attention to the "Profiles" section at the top of
-# this file.  You will notice that we have two unique headers. One for the orderer genesis
-# block - ``TwoOrgsOrdererGenesis`` - and one for our channel - ``TwoOrgsChannel``.
-# These headers are important, as we will pass them in as arguments when we create
-# our artifacts.  This file also contains two additional specifications that are worth
-# noting.  Firstly, we specify the anchor peers for each Peer Org
-# (``peer0.buyer.example.com`` & ``peer0.seller.example.com``).  Secondly, we point to
-# the location of the MSP directory for each member, in turn allowing us to store the
-# root certificates for each Org in the orderer genesis block.  This is a critical
-# concept. Now any network entity communicating with the ordering service can have
-# its digital signature verified.
-#
-# This function will generate the crypto material and our four configuration
-# artifacts, and subsequently output these files into the ``channel-artifacts``
-# folder.
-#
-# If you receive the following warning, it can be safely ignored:
-#
-# [bccsp] GetDefault -> WARN 001 Before using BCCSP, please call InitFactories(). Falling back to bootBCCSP.
-#
-# You can ignore the logs regarding intermediate certs, we are not using them in
-# this crypto implementation.
-
-# Generate orderer genesis block, channel configuration transaction and
-# anchor peer update transactions
 function generateChannelArtifacts() {
   which configtxgen
   if [ "$?" -ne 0 ]; then
@@ -237,7 +117,7 @@ function generateChannelArtifacts() {
   echo "### Generating channel configuration transaction 'channel.tx' ###"
   echo "#################################################################"
   set -x
-  configtxgen -profile FourOrgsChannel -outputCreateChannelTx ${CURRENT_DIR}/channel-artifacts/channel.tx -channelID $CHANNEL_NAME
+  configtxgen -profile FourOrgsChannel -outputCreateChannelTx ${CURRENT_DIR}/channel-artifacts/mychannel.tx -channelID $CHANNEL_NAME
   res=$?
   set +x
   if [ $res -ne 0 ]; then
@@ -278,7 +158,7 @@ function generateChannelArtifacts() {
 OS_ARCH=$(echo "$(uname -s | tr '[:upper:]' '[:lower:]' | sed 's/mingw64_nt.*/windows/')-$(uname -m | sed 's/x86_64/amd64/g')" | awk '{print tolower($0)}')
 
 # system channel name defaults to "byfn-sys-channel"
-SYS_CHANNEL="byfn-sys-channel"
+SYS_CHANNEL="sys-channel"
 # channel name defaults to "mychannel"
 CHANNEL_NAME="mychannel"
 
@@ -295,7 +175,6 @@ if [ "$1" = "-m" ]; then # supports old usage, muscle memory is powerful!
 fi
 MODE=$1
 
-echo "No of peers: ${NO_PEERS}"
 i=0
 
 
@@ -360,10 +239,6 @@ while getopts "h?c:t:d:f:s:l:i:o:anv" opt; do
     ;;
   esac
 done
-
-
-# ask for confirmation to proceed
-askProceed
 
 #Create the network using docker compose
 

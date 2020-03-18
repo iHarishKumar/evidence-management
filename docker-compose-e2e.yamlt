@@ -63,10 +63,10 @@ services:
       - FABRIC_CA_SERVER_CA_NAME=ca_peerCourt
       - FABRIC_CA_SERVER_TLS_ENABLED=true
       - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.court.example.com-cert.pem
-      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/2c67ccdde09f11990f0f38a95ae3f02fcb631fc469766b98a67862233f12cf1a_sk
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/Court_CA_PRIVATE_KEY
     ports:
       - "9054:7054"
-    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.court.example.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/2c67ccdde09f11990f0f38a95ae3f02fcb631fc469766b98a67862233f12cf1a_sk -b admin:adminpw -d'
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.court.example.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/Court_CA_PRIVATE_KEY -b admin:adminpw -d'
     volumes:
       - ./crypto-config/peerOrganizations/court.example.com/ca/:/etc/hyperledger/fabric-ca-server-config
       - ./artifacts/ca-config/court/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
