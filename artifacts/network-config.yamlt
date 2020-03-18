@@ -144,7 +144,7 @@ organizations:
     # this way. The SDK should allow applications to set the org admin identity via APIs, and only use
     # this route as an alternative when it exists.
     adminPrivateKey:
-      path: crypto-config/peerOrganizations/police.example.com/users/Admin@police.example.com/msp/keystore/e00c9ef69d70f3fb06591d36c63bdc3db3438db92cb3965c4cdc7ab26fb28598_sk
+      path: crypto-config/peerOrganizations/police.example.com/users/Admin@police.example.com/msp/keystore/ced22e236535285e3ca613e91d4b5d1dba71a3ee98ff84ad74c22e18aaa1be98_sk
     signedCert:
       path: crypto-config/peerOrganizations/police.example.com/users/Admin@police.example.com/msp/signcerts/Admin@police.example.com-cert.pem
 
@@ -161,7 +161,7 @@ organizations:
     certificateAuthorities:
       - ca_peerLawyers
     adminPrivateKey:
-      path: crypto-config/peerOrganizations/lawyers.example.com/users/Admin@lawyers.example.com/msp/keystore/1587dfb0fc981050c4fd9a41bbb819487543f4c2277957b92e10bb03c85c2d13_sk
+      path: crypto-config/peerOrganizations/lawyers.example.com/users/Admin@lawyers.example.com/msp/keystore/a247543f5c5820af76c8d840bebe69853f82200367adfd5fbb39a86ba4850151_sk
     signedCert:
       path: crypto-config/peerOrganizations/lawyers.example.com/users/Admin@lawyers.example.com/msp/signcerts/Admin@lawyers.example.com-cert.pem
 
@@ -173,7 +173,7 @@ organizations:
     certificateAuthorities:
       - ca_peerForensics
     adminPrivateKey:
-      path: crypto-config/peerOrganizations/forensics.example.com/users/Admin@forensics.example.com/msp/keystore/46aabb6019199a6c95b2aecec7b570aa30a807158a613294d9b08a871be244d7_sk
+      path: crypto-config/peerOrganizations/forensics.example.com/users/Admin@forensics.example.com/msp/keystore/788b090ed4cb1c1bcbb395612aee185684f64f8aeac1887d5dbd70db94e20d5f_sk
     signedCert:
       path: crypto-config/peerOrganizations/forensics.example.com/users/Admin@forensics.example.com/msp/signcerts/Admin@forensics.example.com-cert.pem
 

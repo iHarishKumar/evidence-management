@@ -4,3 +4,5 @@ sample.yaml
 node_modules
 channel-artifacts
 fabric-client-kv-*
+artifacts/network-config.yaml
+artifacts/network-config.yamlt

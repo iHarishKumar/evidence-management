@@ -335,13 +335,13 @@ app.post('/channels/:channelName/chaincodes/:chaincodeName', async function(req,
 		res.json(getErrorMessage('\'args\''));
 		return;
 	}
-	convertArgs(args, req.headers.authorization.toString())
-	.then((vals) => {
-		args.push(vals)
-		console.log("-----------ewnflew---------")
-		console.log(args)
+	// convertArgs(args, req.headers.authorization.toString())
+	// .then((vals) => {
+	// 	args.push(vals)
+	// 	console.log("-----------ewnflew---------")
+	// 	console.log(args)
 
-	})
+	// })
 	let message = await invoke.invokeChaincode(peers, channelName, chaincodeName, fcn, args, req.username, req.orgname);
 	res.send(message);
 
