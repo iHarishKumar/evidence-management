@@ -42,8 +42,7 @@ var query = require('./app/query.js');
 var metadata = require('./metadata.js')
 var host = process.env.HOST || hfc.getConfigSetting('host');
 var port = process.env.PORT || hfc.getConfigSetting('port');
-const exiftool = require("exiftool-vendored").exiftool
-const crypto = require('crypto-js')
+
 ///////////////////////////////////////////////////////////////////////////////
 //////////////////////////////// SET CONFIGURATONS ////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -279,34 +278,10 @@ app.post('/channels/:channelName/chaincodes', async function(req, res) {
 	res.send(message);
 });
 // Invoke transaction on chaincode on target peers
-var convertArgs = async function(args, token){
+var convertArgs = async function(args, token, funcCallback, ...rest){
 	console.log(typeof args)
 	var imageURL = args[args.length-1]
-	exiftool
-    .read(imageURL)
-    .then((tags) =>{
-      var metadata = {
-        'profileDateTime': tags.ProfileDateTime.toString(),
-        'fileModified': tags.FileModifyDate.toString(),
-        'filesize': tags.FileSize,
-        'fileHeight': tags.ImageHeight,
-        'fileWidth': tags.ImageWidth
-      }
-      var file = {
-        'sourceFile': tags.SourceFile,
-        'directory': tags.Directory,
-        'filename': tags.FileName
-      }
-      exiftool.end()
-      var metadataHash = crypto.AES.encrypt(JSON.stringify(metadata), token.split(" ")[1]).toString()
-      var fileHash = crypto.AES.encrypt(JSON.stringify(file), token.split(" ")[1]).toString()
-      console.log(metadataHash)
-	  console.log(fileHash)
-	  return [metadataHash, fileHash]
-    })
-    .catch(err => console.error("Something terrible happened: ", err))
-
-    console.log("-----------")
+	return metadata.extractMetadata(args, imageURL, token, funcCallback, rest)
 }
 app.post('/channels/:channelName/chaincodes/:chaincodeName', async function(req, res) {
 	logger.debug('==================== INVOKE ON CHAINCODE ==================');
@@ -335,15 +310,7 @@ app.post('/channels/:channelName/chaincodes/:chaincodeName', async function(req,
 		res.json(getErrorMessage('\'args\''));
 		return;
 	}
-	// convertArgs(args, req.headers.authorization.toString())
-	// .then((vals) => {
-	// 	args.push(vals)
-	// 	console.log("-----------ewnflew---------")
-	// 	console.log(args)
-
-	// })
-	let message = await invoke.invokeChaincode(peers, channelName, chaincodeName, fcn, args, req.username, req.orgname);
-	res.send(message);
+	await convertArgs(args, req.headers.authorization.toString(), invoke.invokeChaincode, peers, channelName, chaincodeName, fcn, req.username, req.orgname, res)
 
 });
 // Query on chaincode on target peers
@@ -351,6 +318,7 @@ app.get('/channels/:channelName/chaincodes/:chaincodeName', async function(req, 
 	logger.debug('==================== QUERY BY CHAINCODE ==================');
 	var channelName = req.params.channelName;
 	var chaincodeName = req.params.chaincodeName;
+	var type = req.query.type
 	let args = req.query.args;
 	let fcn = req.query.fcn;
 	let peer = req.query.peer;
@@ -381,8 +349,22 @@ app.get('/channels/:channelName/chaincodes/:chaincodeName', async function(req, 
 	logger.debug(args);
 
 	let message = await query.queryChaincode(peer, channelName, chaincodeName, args, fcn, req.username, req.orgname);
-	res.send(message);
+	if(type === 'decrypt' && fcn === 'queryAsset'){
+		var val = JSON.parse(message)
+		var firMetadataHash = metadata.decryptMetadata(val['FIR_HASH'], val['FIR_METADATA_HASH'])
+		val['FIR'] = JSON.parse(firMetadataHash[0])
+		val['FIR_METADATA'] = JSON.parse(firMetadataHash[1])
+		console.log('--------------------------------------------')
+		console.log(firMetadataHash)
+		console.log('--------------------------------------------')
+		res.send(val)
+	}
+	else{
+		res.send(message)
+	}
 });
+
+
 //  Query Get Block by BlockNumber
 app.get('/channels/:channelName/blocks/:blockId', async function(req, res) {
 	logger.debug('==================== GET BLOCK BY NUMBER ==================');

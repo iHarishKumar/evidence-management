@@ -68,205 +68,205 @@ echo "Police token is $POLICE_TOKEN"
 echo
 echo "POST request Enroll on Forensics ..."
 echo
-# FORENSICS_TOKEN=$(curl -s -X POST \
-#   http://localhost:4000/users \
-#   -H "content-type: application/x-www-form-urlencoded" \
-#   -d 'username=Jim&orgName=Forensics')
-# echo $FORENSICS_TOKEN
-# FORENSICS_TOKEN=$(echo $FORENSICS_TOKEN | jq ".token" | sed "s/\"//g")
-# echo
-# echo "Forensics token is $FORENSICS_TOKEN"
-# echo
-# echo
-# echo "POST request Enroll on Lawyers ..."
-# echo
-# LAWYERS_TOKEN=$(curl -s -X POST \
-#   http://localhost:4000/users \
-#   -H "content-type: application/x-www-form-urlencoded" \
-#   -d 'username=Jim&orgName=Lawyers')
-# echo $LAWYERS_TOKEN
-# LAWYERS_TOKEN=$(echo $LAWYERS_TOKEN | jq ".token" | sed "s/\"//g")
-# echo
-# echo "Lawyers token is $LAWYERS_TOKEN"
-# echo
-# echo
-# echo "POST request Enroll on Court ..."
-# echo
-# COURT_TOKEN=$(curl -s -X POST \
-#   http://localhost:4000/users \
-#   -H "content-type: application/x-www-form-urlencoded" \
-#   -d 'username=Jim&orgName=Court')
-# echo $COURT_TOKEN
-# COURT_TOKEN=$(echo $COURT_TOKEN | jq ".token" | sed "s/\"//g")
-# echo
-# echo "Court token is $COURT_TOKEN"
-# echo
-# echo
-# #---------Enroll Users----------------
-# #---------End-------------------------
+FORENSICS_TOKEN=$(curl -s -X POST \
+  http://localhost:4000/users \
+  -H "content-type: application/x-www-form-urlencoded" \
+  -d 'username=Jim&orgName=Forensics')
+echo $FORENSICS_TOKEN
+FORENSICS_TOKEN=$(echo $FORENSICS_TOKEN | jq ".token" | sed "s/\"//g")
+echo
+echo "Forensics token is $FORENSICS_TOKEN"
+echo
+echo
+echo "POST request Enroll on Lawyers ..."
+echo
+LAWYERS_TOKEN=$(curl -s -X POST \
+  http://localhost:4000/users \
+  -H "content-type: application/x-www-form-urlencoded" \
+  -d 'username=Jim&orgName=Lawyers')
+echo $LAWYERS_TOKEN
+LAWYERS_TOKEN=$(echo $LAWYERS_TOKEN | jq ".token" | sed "s/\"//g")
+echo
+echo "Lawyers token is $LAWYERS_TOKEN"
+echo
+echo
+echo "POST request Enroll on Court ..."
+echo
+COURT_TOKEN=$(curl -s -X POST \
+  http://localhost:4000/users \
+  -H "content-type: application/x-www-form-urlencoded" \
+  -d 'username=Jim&orgName=Court')
+echo $COURT_TOKEN
+COURT_TOKEN=$(echo $COURT_TOKEN | jq ".token" | sed "s/\"//g")
+echo
+echo "Court token is $COURT_TOKEN"
+echo
+echo
+#---------Enroll Users----------------
+#---------End-------------------------
 
-# #---------Create Channel--------------
-# #---------Start-----------------------
+#---------Create Channel--------------
+#---------Start-----------------------
 
-# echo "POST request Create channel  ..."
-# echo
-# curl -s -X POST \
-#   http://localhost:4000/channels \
-#   -H "authorization: Bearer $POLICE_TOKEN" \
-#   -H "content-type: application/json" \
-#   -d '{
-# 	"channelName":"mychannel",
-# 	"channelConfigPath":"../channel-artifacts/mychannel.tx"
-# }'
-# echo
-# echo
-# #---------Create Channel--------------
-# #---------End-------------------------
+echo "POST request Create channel  ..."
+echo
+curl -s -X POST \
+  http://localhost:4000/channels \
+  -H "authorization: Bearer $POLICE_TOKEN" \
+  -H "content-type: application/json" \
+  -d '{
+	"channelName":"mychannel",
+	"channelConfigPath":"../channel-artifacts/mychannel.tx"
+}'
+echo
+echo
+#---------Create Channel--------------
+#---------End-------------------------
 
-# #---------Join Channel----------------
-# #---------Start-----------------------
+#---------Join Channel----------------
+#---------Start-----------------------
 
-# sleep 5
-# echo "POST request Join channel on Police"
-# echo
-# curl -s -X POST \
-#   http://localhost:4000/channels/mychannel/peers \
-#   -H "authorization: Bearer $POLICE_TOKEN" \
-#   -H "content-type: application/json" \
-#   -d '{
-# 	"peers": ["peer0.police.example.com","peer1.police.example.com"]
-# }'
-# echo
-# echo
+sleep 5
+echo "POST request Join channel on Police"
+echo
+curl -s -X POST \
+  http://localhost:4000/channels/mychannel/peers \
+  -H "authorization: Bearer $POLICE_TOKEN" \
+  -H "content-type: application/json" \
+  -d '{
+	"peers": ["peer0.police.example.com","peer1.police.example.com"]
+}'
+echo
+echo
 
-# echo "POST request Join channel on Forensics"
-# echo
-# curl -s -X POST \
-#   http://localhost:4000/channels/mychannel/peers \
-#   -H "authorization: Bearer $FORENSICS_TOKEN" \
-#   -H "content-type: application/json" \
-#   -d '{
-# 	"peers": ["peer0.forensics.example.com","peer1.forensics.example.com"]
-# }'
-# echo
-# echo
+echo "POST request Join channel on Forensics"
+echo
+curl -s -X POST \
+  http://localhost:4000/channels/mychannel/peers \
+  -H "authorization: Bearer $FORENSICS_TOKEN" \
+  -H "content-type: application/json" \
+  -d '{
+	"peers": ["peer0.forensics.example.com","peer1.forensics.example.com"]
+}'
+echo
+echo
 
-# echo "POST request Join channel on Lawyers"
-# echo
-# curl -s -X POST \
-#   http://localhost:4000/channels/mychannel/peers \
-#   -H "authorization: Bearer $LAWYERS_TOKEN" \
-#   -H "content-type: application/json" \
-#   -d '{
-# 	"peers": ["peer0.lawyers.example.com","peer1.lawyers.example.com"]
-# }'
-# echo
-# echo
+echo "POST request Join channel on Lawyers"
+echo
+curl -s -X POST \
+  http://localhost:4000/channels/mychannel/peers \
+  -H "authorization: Bearer $LAWYERS_TOKEN" \
+  -H "content-type: application/json" \
+  -d '{
+	"peers": ["peer0.lawyers.example.com","peer1.lawyers.example.com"]
+}'
+echo
+echo
 
-# echo "POST request Join channel on Court"
-# echo
-# curl -s -X POST \
-#   http://localhost:4000/channels/mychannel/peers \
-#   -H "authorization: Bearer $COURT_TOKEN" \
-#   -H "content-type: application/json" \
-#   -d '{
-# 	"peers": ["peer0.court.example.com","peer1.court.example.com"]
-# }'
-# echo
-# echo
+echo "POST request Join channel on Court"
+echo
+curl -s -X POST \
+  http://localhost:4000/channels/mychannel/peers \
+  -H "authorization: Bearer $COURT_TOKEN" \
+  -H "content-type: application/json" \
+  -d '{
+	"peers": ["peer0.court.example.com","peer1.court.example.com"]
+}'
+echo
+echo
 
-# #---------Join Channel----------------
-# #---------End-------------------------
+#---------Join Channel----------------
+#---------End-------------------------
 
-# #---------Install Channel-------------
-# #---------Start-----------------------
+#---------Install Channel-------------
+#---------Start-----------------------
 
-# echo "POST Install chaincode on Police"
-# echo
-# curl -s -X POST \
-#   http://localhost:4000/chaincodes \
-#   -H "authorization: Bearer $POLICE_TOKEN" \
-#   -H "content-type: application/json" \
-#   -d "{
-# 	\"peers\": [\"peer0.police.example.com\",\"peer1.police.example.com\"],
-# 	\"chaincodeName\":\"mycc\",
-# 	\"chaincodePath\":\"$CC_SRC_PATH\",
-# 	\"chaincodeType\": \"$LANGUAGE\",
-# 	\"chaincodeVersion\":\"v2\"
-# }"
-# echo
-# echo
+echo "POST Install chaincode on Police"
+echo
+curl -s -X POST \
+  http://localhost:4000/chaincodes \
+  -H "authorization: Bearer $POLICE_TOKEN" \
+  -H "content-type: application/json" \
+  -d "{
+	\"peers\": [\"peer0.police.example.com\",\"peer1.police.example.com\"],
+	\"chaincodeName\":\"mycc\",
+	\"chaincodePath\":\"$CC_SRC_PATH\",
+	\"chaincodeType\": \"$LANGUAGE\",
+	\"chaincodeVersion\":\"v2\"
+}"
+echo
+echo
 
-# echo "POST Install chaincode on Forensics"
-# echo
-# curl -s -X POST \
-#   http://localhost:4000/chaincodes \
-#   -H "authorization: Bearer $FORENSICS_TOKEN" \
-#   -H "content-type: application/json" \
-#   -d "{
-# 	\"peers\": [\"peer0.forensics.example.com\",\"peer1.forensics.example.com\"],
-# 	\"chaincodeName\":\"mycc\",
-# 	\"chaincodePath\":\"$CC_SRC_PATH\",
-# 	\"chaincodeType\": \"$LANGUAGE\",
-# 	\"chaincodeVersion\":\"v2\"
-# }"
-# echo
-# echo
+echo "POST Install chaincode on Forensics"
+echo
+curl -s -X POST \
+  http://localhost:4000/chaincodes \
+  -H "authorization: Bearer $FORENSICS_TOKEN" \
+  -H "content-type: application/json" \
+  -d "{
+	\"peers\": [\"peer0.forensics.example.com\",\"peer1.forensics.example.com\"],
+	\"chaincodeName\":\"mycc\",
+	\"chaincodePath\":\"$CC_SRC_PATH\",
+	\"chaincodeType\": \"$LANGUAGE\",
+	\"chaincodeVersion\":\"v2\"
+}"
+echo
+echo
 
-# echo "POST Install chaincode on Lawyers"
-# echo
-# curl -s -X POST \
-#   http://localhost:4000/chaincodes \
-#   -H "authorization: Bearer $LAWYERS_TOKEN" \
-#   -H "content-type: application/json" \
-#   -d "{
-# 	\"peers\": [\"peer0.lawyers.example.com\",\"peer1.lawyers.example.com\"],
-# 	\"chaincodeName\":\"mycc\",
-# 	\"chaincodePath\":\"$CC_SRC_PATH\",
-# 	\"chaincodeType\": \"$LANGUAGE\",
-# 	\"chaincodeVersion\":\"v2\"
-# }"
-# echo
-# echo
+echo "POST Install chaincode on Lawyers"
+echo
+curl -s -X POST \
+  http://localhost:4000/chaincodes \
+  -H "authorization: Bearer $LAWYERS_TOKEN" \
+  -H "content-type: application/json" \
+  -d "{
+	\"peers\": [\"peer0.lawyers.example.com\",\"peer1.lawyers.example.com\"],
+	\"chaincodeName\":\"mycc\",
+	\"chaincodePath\":\"$CC_SRC_PATH\",
+	\"chaincodeType\": \"$LANGUAGE\",
+	\"chaincodeVersion\":\"v2\"
+}"
+echo
+echo
 
-# echo "POST Install chaincode on Court"
-# echo
-# curl -s -X POST \
-#   http://localhost:4000/chaincodes \
-#   -H "authorization: Bearer $COURT_TOKEN" \
-#   -H "content-type: application/json" \
-#   -d "{
-# 	\"peers\": [\"peer0.court.example.com\",\"peer1.court.example.com\"],
-# 	\"chaincodeName\":\"mycc\",
-# 	\"chaincodePath\":\"$CC_SRC_PATH\",
-# 	\"chaincodeType\": \"$LANGUAGE\",
-# 	\"chaincodeVersion\":\"v2\"
-# }"
-# echo
-# echo
+echo "POST Install chaincode on Court"
+echo
+curl -s -X POST \
+  http://localhost:4000/chaincodes \
+  -H "authorization: Bearer $COURT_TOKEN" \
+  -H "content-type: application/json" \
+  -d "{
+	\"peers\": [\"peer0.court.example.com\",\"peer1.court.example.com\"],
+	\"chaincodeName\":\"mycc\",
+	\"chaincodePath\":\"$CC_SRC_PATH\",
+	\"chaincodeType\": \"$LANGUAGE\",
+	\"chaincodeVersion\":\"v2\"
+}"
+echo
+echo
 
-# #---------Install Channel-------------
-# #---------End-------------------------
+#---------Install Channel-------------
+#---------End-------------------------
 
-# #---------Instantiate Channel---------
-# #---------Start-----------------------
+#---------Instantiate Channel---------
+#---------Start-----------------------
 
-# echo "POST instantiate chaincode on POLICE"
-# echo
-# curl -s -X POST \
-#   http://localhost:4000/channels/mychannel/chaincodes \
-#   -H "authorization: Bearer $POLICE_TOKEN" \
-#   -H "content-type: application/json" \
-#   -d '{
-#   "peers": ["peer0.police.example.com"],
-# 	"chaincodeName":"mycc",
-# 	"chaincodeVersion":"v2",
-# 	"chaincodeType": "$LANGUAGE",
-# 	"args":["a","100","b","200"]
-# }'
+echo "POST instantiate chaincode on POLICE"
+echo
+curl -s -X POST \
+  http://localhost:4000/channels/mychannel/chaincodes \
+  -H "authorization: Bearer $POLICE_TOKEN" \
+  -H "content-type: application/json" \
+  -d '{
+  "peers": ["peer0.police.example.com"],
+	"chaincodeName":"mycc",
+	"chaincodeVersion":"v2",
+	"chaincodeType": "$LANGUAGE",
+	"args":["a","100","b","200"]
+}'
 
-# echo
-# echo
+echo
+echo
 
 
 echo "POST invoke chaincode on peers of Forensics, Police, Court and Lawyers"
@@ -279,7 +279,7 @@ curl -s -X POST \
 	"peers": ["peer0.police.example.com"],
 	"fcn":"invoke",
   "operation":"createCase",
-	"args": ["createCase","Case-Name", "Case - Description", "CREATED", "/Users/harishgunjalli/Desktop/2018-19/Screenshot 2019-08-27 at 1.06.57 PM.png", "HASH1", "HASH2"]
+	"args": ["createCase","Case-Name", "Case - Description", "CREATED", "/Users/harishgunjalli/Desktop/2018-19/Screenshot 2019-08-27 at 1.06.57 PM.png"]
 }'
 echo
 echo
