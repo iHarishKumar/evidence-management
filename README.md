@@ -1,5 +1,5 @@
 # evidence-management
- A Hyperledger project on Evidence Management.
+ A DLT based evidence management system wherein the entire life-cycle of a specific crime/case file can be tracked with tamper-proof data. Here, any digital data that is specific to the case, will be hashed and pushed to the blockchain. Hence, reducing the risk of trust and mismanagement in the system. The parties involved are Police, Forensics, Court, Lawyers.
 
 # Steps for setting up the network
 
@@ -46,8 +46,9 @@
 
 * Encrypt/Decrypt metadata.
 * Hash file data.
-* CounchDB add on
-* JWT Authentication
+* CounchDB add on.
+* JWT Authentication.
+* Metadata extraction using Exiftool-Vendored.
 
 
 
