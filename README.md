@@ -42,7 +42,7 @@
 
 # Version History
 
-### 1.1 Fetaures
+### 1.0 Fetaures
 
 * Encrypt/Decrypt metadata.
 * Hash file data.
