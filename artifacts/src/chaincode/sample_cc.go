@@ -10,27 +10,34 @@ import (
 	"time"
 )
 
-type buyer_seller struct {
+type evidence_management struct {
 }
 
 type Case_Asset struct {
-	Case_Id            string `json:"Case_Id"`
-	Case_Name          string `json:"Case_Name"`
-	Case_Description   string `json:"Case_Description"`
-	Status             string `json:"Status"`
-	FIR_Image_URL      string `json:"FIR_Image_URL"`
-	FIR_HASH           string `json:"FIR_HASH"`
-	FIR_METATDATA_HASH string `json:"FIR_METADATA_HASH"`
-	Date_Of_Creation   string `json:"Date_Of_Creation"`
+	Case_Id               string `json:"Case_Id"`
+	Case_Name             string `json:"Case_Name"`
+	Case_Description      string `json:"Case_Description"`
+	Status                string `json:"Status"`
+	FIR_Image_URL         string `json:"FIR_Image_URL"`
+	FIR_ENCRYPT           string `json:"FIR_ENCRYPT"`
+	FIR_METATDATA_ENCRYPT string `json:"FIR_METADATA_ENCRYPT"`
+	Date_Of_Creation      string `json:"Date_Of_Creation"`
+	FIR_HASH              string `json:"FIR_HASH"`
+	FIR_METADATA_HASH     string `json:"FIR_METADATA_HASH"`
+	FIR_DATA_HASH         string `json:"FIR_DATA_HASH"`
 }
 
+//Artificat Asset
 type Document_Asset struct {
-	Document_Id            string `json:"Document_Id"`
-	Document_Description   string `json:"Document_Description"`
-	Document_URL           string `json:"Document_URL"`
-	Document_HASH          string `json:"Document_HASH"`
-	Document_METADATA_HASH string `json:"Document_METADATA_HASH"`
-	Case_Id                string `json:"Case_Id"`
+	Document_Id               string `json:"Document_Id"`
+	Document_Description      string `json:"Document_Description"`
+	Document_URL              string `json:"Document_URL"`
+	Document_ENCRYPT          string `json:"Document_HASH"`
+	Document_METADATA_ENCRYPT string `json:"Document_METADATA_HASH"`
+	Case_Id                   string `json:"Case_Id"`
+	Document_HASH             string `json:"Document_HASH"`
+	Document_METADATA_HASH    string `json:"Document_METADATA_HASH"`
+	Document_Data_HASH        string `json:"Document_Data_HASH"`
 }
 
 type FIR_Asset struct {
@@ -58,7 +65,7 @@ type FIRNo struct {
 // Main
 // ============================================================================================================================
 func main() {
-	err := shim.Start(new(buyer_seller))
+	err := shim.Start(new(evidence_management))
 	if err != nil {
 		fmt.Printf("Error starting chaincode: %s", err)
 	}
@@ -68,7 +75,7 @@ func main() {
 // ============================================================================================================================
 // Init - reset all the things
 // ============================================================================================================================
-func (t *buyer_seller) Init(APIstub shim.ChaincodeStubInterface) pb.Response {
+func (t *evidence_management) Init(APIstub shim.ChaincodeStubInterface) pb.Response {
 
 	// Initializing Case Counter
 	CaseCounterBytes, _ := APIstub.GetState("CaseCounterNO")
@@ -141,7 +148,7 @@ func incrementCounter(APIstub shim.ChaincodeStubInterface, AssetType string) int
 // ============================================================================================================================
 // Invoke - Our entry point for Invocations
 // ============================================================================================================================
-func (t *buyer_seller) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
+func (t *evidence_management) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	function, args := stub.GetFunctionAndParameters()
 	fmt.Println("function is ==> :" + function)
 	action := args[0]
@@ -174,7 +181,7 @@ func (t *buyer_seller) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 // ===== Example: Ad hoc rich query ========================================================
 // Only available on state databases that support rich query (e.g. CouchDB)
 // =========================================================================================
-func (t *buyer_seller) Query(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *evidence_management) Query(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
 	queryString := args[1]
 
@@ -228,7 +235,7 @@ func getQueryResultForQueryString(stub shim.ChaincodeStubInterface, queryString 
 //E-com
 
 // GetTxTimestampChannel Function gets the Transaction time when the chain code was executed it remains same on all the peers where chaincode executes
-func (t *buyer_seller) GetTxTimestampChannel(APIstub shim.ChaincodeStubInterface) (string, error) {
+func (t *evidence_management) GetTxTimestampChannel(APIstub shim.ChaincodeStubInterface) (string, error) {
 	txTimeAsPtr, err := APIstub.GetTxTimestamp()
 	if err != nil {
 		fmt.Printf("Returning error in TimeStamp \n")
@@ -241,7 +248,7 @@ func (t *buyer_seller) GetTxTimestampChannel(APIstub shim.ChaincodeStubInterface
 }
 
 // queryAsset Function gets the assets based on Id provided as input
-func (t *buyer_seller) queryAsset(APIstub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *evidence_management) queryAsset(APIstub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) != 2 {
 		return shim.Error("Incorrect number of arguments, Required 2")
 	}
@@ -259,10 +266,10 @@ func (t *buyer_seller) queryAsset(APIstub shim.ChaincodeStubInterface, args []st
 }
 
 // update Case Attributes
-func (t *buyer_seller) updateCase(APIstub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *evidence_management) updateCase(APIstub shim.ChaincodeStubInterface, args []string) pb.Response {
 
-	if len(args) != 8 {
-		return shim.Error("Incorrect number of arguments, Required 6")
+	if len(args) != 10 {
+		return shim.Error("Incorrect number of arguments, Required 8")
 	}
 
 	if len(args[1]) == 0 {
@@ -279,12 +286,20 @@ func (t *buyer_seller) updateCase(APIstub shim.ChaincodeStubInterface, args []st
 
 	json.Unmarshal(caseBytes, &caseAsset)
 
+	if caseAsset.Status == "CLOSED" {
+		return shim.Error("Cannot update CLOSED case")
+	}
+
+	//Reopen case
+
 	caseAsset.Case_Name = args[2]
 	caseAsset.Case_Description = args[3]
 	caseAsset.Status = args[4]
 	caseAsset.FIR_Image_URL = args[5]
-	caseAsset.FIR_HASH = args[6]
-	caseAsset.FIR_METATDATA_HASH = args[7]
+	caseAsset.FIR_ENCRYPT = args[6]
+	caseAsset.FIR_METATDATA_ENCRYPT = args[7]
+	caseAsset.FIR_HASH = args[8]
+	caseAsset.FIR_METADATA_HASH = args[9]
 
 	comAssetAsBytes, errMarshal := json.Marshal(caseAsset)
 
@@ -304,11 +319,11 @@ func (t *buyer_seller) updateCase(APIstub shim.ChaincodeStubInterface, args []st
 }
 
 // create Case
-func (t *buyer_seller) createCase(APIstub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *evidence_management) createCase(APIstub shim.ChaincodeStubInterface, args []string) pb.Response {
 
 	//To check number of arguments are 7
-	if len(args) != 7 {
-		return shim.Error("Incorrect number of arguments, Required 6 arguments")
+	if len(args) != 10 {
+		return shim.Error("Incorrect number of arguments, Required 10 arguments")
 	}
 
 	//To check each argument is not null
@@ -326,8 +341,11 @@ func (t *buyer_seller) createCase(APIstub shim.ChaincodeStubInterface, args []st
 	if errTx != nil {
 		return shim.Error("Returning error in Transaction TimeStamp")
 	}
-
-	var comAsset = Case_Asset{Case_Id: "Case" + strconv.Itoa(caseCounter), Case_Name: args[1], Case_Description: args[2], Status: args[3], FIR_Image_URL: args[4], FIR_HASH: args[5], FIR_METATDATA_HASH: args[6], Date_Of_Creation: txTimeAsPtr}
+	var status = args[3]
+	if status != "CREATED" {
+		status = "CREATED"
+	}
+	var comAsset = Case_Asset{Case_Id: "Case" + strconv.Itoa(caseCounter), Case_Name: args[1], Case_Description: args[2], Status: status, FIR_Image_URL: args[4], FIR_ENCRYPT: args[5], FIR_METATDATA_ENCRYPT: args[6], Date_Of_Creation: txTimeAsPtr, FIR_HASH: args[7], FIR_METADATA_HASH: args[8], FIR_DATA_HASH: args[9]}
 
 	comAssetAsBytes, errMarshal := json.Marshal(comAsset)
 
@@ -351,7 +369,7 @@ func (t *buyer_seller) createCase(APIstub shim.ChaincodeStubInterface, args []st
 }
 
 // Create FIR Asset
-func (t *buyer_seller) createFIR(APIstub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *evidence_management) createFIR(APIstub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// To check number of arguments
 	if len(args) != 7 {
 		return shim.Error("Incorrect number of arguments, Required 5 arguments")
@@ -394,10 +412,10 @@ func (t *buyer_seller) createFIR(APIstub shim.ChaincodeStubInterface, args []str
 	return shim.Success(nil)
 }
 
-func (t *buyer_seller) createDoc(APIstub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *evidence_management) createDoc(APIstub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// To check number of arguments
-	if len(args) != 7 {
-		return shim.Error("Incorrect number of arguments, Required 5 arguments")
+	if len(args) != 9 {
+		return shim.Error("Incorrect number of arguments, Required 9 arguments")
 	}
 	// To check each argument is not null
 	for i := 0; i < len(args); i++ {
@@ -419,7 +437,7 @@ func (t *buyer_seller) createDoc(APIstub shim.ChaincodeStubInterface, args []str
 	docCounter := getCounter(APIstub, "DocumentCounterNo")
 	docCounter++
 
-	docAsset := Document_Asset{Document_Id: "Document" + strconv.Itoa(docCounter), Document_Description: args[2], Document_URL: args[3], Document_HASH: args[4], Document_METADATA_HASH: args[5], Case_Id: caseAsset.Case_Id}
+	docAsset := Document_Asset{Document_Id: "Document" + strconv.Itoa(docCounter), Document_Description: args[2], Document_URL: args[3], Document_ENCRYPT: args[4], Document_METADATA_ENCRYPT: args[5], Case_Id: caseAsset.Case_Id, Document_HASH: args[6], Document_METADATA_HASH: args[7], Document_Data_HASH: args[8]}
 
 	docAssetAsBytes, errMarshal := json.Marshal(docAsset)
 
@@ -439,7 +457,7 @@ func (t *buyer_seller) createDoc(APIstub shim.ChaincodeStubInterface, args []str
 }
 
 // update Case Status
-func (t *buyer_seller) updateCaseStatus(APIstub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *evidence_management) updateCaseStatus(APIstub shim.ChaincodeStubInterface, args []string) pb.Response {
 
 	if len(args) != 3 {
 		return shim.Error("Incorrect number of arguments, Required 3")
@@ -463,6 +481,10 @@ func (t *buyer_seller) updateCaseStatus(APIstub shim.ChaincodeStubInterface, arg
 
 	json.Unmarshal(caseBytes, &caseAsset)
 
+	if caseAsset.Status == "CLOSED" {
+		return shim.Error("Case is already CLOSED")
+	}
+
 	caseAsset.Status = args[2]
 
 	updateCaseBytes, errMarshal := json.Marshal(caseAsset)
@@ -481,7 +503,7 @@ func (t *buyer_seller) updateCaseStatus(APIstub shim.ChaincodeStubInterface, arg
 }
 
 // query all assets
-func (t *buyer_seller) queryAllAsset(APIstub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *evidence_management) queryAllAsset(APIstub shim.ChaincodeStubInterface, args []string) pb.Response {
 
 	startKey := ""
 
@@ -552,7 +574,7 @@ func (t *buyer_seller) queryAllAsset(APIstub shim.ChaincodeStubInterface, args [
 }
 
 // get History For Record
-func (t *buyer_seller) getHistoryForRecord(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *evidence_management) getHistoryForRecord(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
 	recordKey := args[1]
 

@@ -235,7 +235,8 @@ app.post('/chaincodes', async function(req, res) {
 		return;
 	}
 	let message = await install.installChaincode(peers, chaincodeName, chaincodePath, chaincodeVersion, chaincodeType, req.username, req.orgname)
-	res.send(message);});
+	res.send(message)
+});
 // Instantiate chaincode on target peers
 app.post('/channels/:channelName/chaincodes', async function(req, res) {
 	logger.debug('==================== INSTANTIATE CHAINCODE ==================');
@@ -278,10 +279,10 @@ app.post('/channels/:channelName/chaincodes', async function(req, res) {
 	res.send(message);
 });
 // Invoke transaction on chaincode on target peers
-var convertArgs = async function(args, token, funcCallback, ...rest){
+var convertArgs = async function(args, token, funcCallback, key, ...rest){
 	console.log(typeof args)
 	var imageURL = args[args.length-1]
-	return metadata.extractMetadata(args, imageURL, token, funcCallback, rest)
+	return metadata.extractMetadata(args, imageURL, funcCallback, key, rest)
 }
 app.post('/channels/:channelName/chaincodes/:chaincodeName', async function(req, res) {
 	logger.debug('==================== INVOKE ON CHAINCODE ==================');
@@ -290,6 +291,8 @@ app.post('/channels/:channelName/chaincodes/:chaincodeName', async function(req,
 	var channelName = req.params.channelName;
 	var fcn = req.body.fcn;
 	var args = req.body.args;
+	var type = req.query.type;
+	var key = req.query .key
 	logger.debug('channelName  : ' + channelName);
 	logger.debug('chaincodeName : ' + chaincodeName);
 	logger.debug('fcn  : ' + fcn);
@@ -310,7 +313,13 @@ app.post('/channels/:channelName/chaincodes/:chaincodeName', async function(req,
 		res.json(getErrorMessage('\'args\''));
 		return;
 	}
-	await convertArgs(args, req.headers.authorization.toString(), invoke.invokeChaincode, peers, channelName, chaincodeName, fcn, req.username, req.orgname, res)
+	if(type === 'updateCaseStatus'){
+		let message = await await invoke.invokeChaincode(peers, channelName, chaincodeName, fcn, args, req.username, req.orgname)
+		res.send(message)
+	}
+	else{
+		await convertArgs(args, req.headers.authorization.toString(), invoke.invokeChaincode, key, peers, channelName, chaincodeName, fcn, req.username, req.orgname, res)
+	}
 
 });
 // Query on chaincode on target peers
@@ -322,6 +331,7 @@ app.get('/channels/:channelName/chaincodes/:chaincodeName', async function(req, 
 	let args = req.query.args;
 	let fcn = req.query.fcn;
 	let peer = req.query.peer;
+	var key = req.query.key;
 
 	logger.debug('channelName : ' + channelName);
 	logger.debug('chaincodeName : ' + chaincodeName);
@@ -349,21 +359,94 @@ app.get('/channels/:channelName/chaincodes/:chaincodeName', async function(req, 
 	logger.debug(args);
 
 	let message = await query.queryChaincode(peer, channelName, chaincodeName, args, fcn, req.username, req.orgname);
+	var fileURL;
 	if(type === 'decrypt' && fcn === 'queryAsset'){
 		var val = JSON.parse(message)
-		var firMetadataHash = metadata.decryptMetadata(val['FIR_HASH'], val['FIR_METADATA_HASH'])
-		val['FIR'] = JSON.parse(firMetadataHash[0])
-		val['FIR_METADATA'] = JSON.parse(firMetadataHash[1])
-		console.log('--------------------------------------------')
-		console.log(firMetadataHash)
-		console.log('--------------------------------------------')
-		res.send(val)
+		let jsonKeys
+		try{
+			if(Array.isArray(val)){
+				for(var i in val){
+					jsonKeys = getKeys(val[i])
+					i.push(jsonKeys)
+				}
+			}
+			else{
+				var keyValue = Object.keys(val)
+				for(var i in keyValue){
+					if(keyValue[i].includes('ENCRYPT') || keyValue[i].includes('HASH')){
+						try{
+							var x = metadata.decryptMetadata(val[keyValue[i]], key)
+							var st = keyValue[i] + "_DECRYPT"
+							val[st] = JSON.parse(x)
+							
+						}catch(error){
+							console.log("Unable to parse json")
+							console.log(error)
+							continue
+						}
+					}
+					if(keyValue[i].includes['URL']){
+						fileURL = val[keyValue[i]]
+					}
+				}
+			}
+		}catch(error){
+			logger.error('Something went wrong')
+			logger.error('Verify the request for correct format')
+			logger.error(error)
+		}
+
+		// console.log('--------------------------------------------')
+		// console.log(val)
+		// console.log('--------------------------------------------')
+		await metadata.verify(res, val)
+
 	}
 	else{
 		res.send(message)
 	}
 });
+const getKeys = function(jsonObj){
+	var ret;
+	var keys = Object.keys(jsonObj)
+	var val
+	for(var i in keys){
+		if(keys[i].includes('ENCRYPT') || keys[i].includes('HASH')){
+			val = metadata.decryptMetadata(jsonObj[keys[i]])
+			var st = keys[i] + (keys[i].includes('ENCRYPT') ? "_DECRYPT" : "MARSHAL")
+			ret[st] = val
+		}
+	}
+	return ret;
+}
+// Upgrade chaincode
+app.post('/channels/:channelName/chaincode/:chaincodeName/upgrade', async function(req, res) {
+	logger.debug('==================== Upgrade Chaincode ==================')
+	var channelName = req.params.channelName
+	var chaincodeName = req.params.chaincodeName
+	let args = req.body.args
+	let chaincodeVersion = req.body.chaincodeVersion
+	let chaincodeType = req.body.chaincodeType
+	let peers = req.body.peers
+	let fcn = req.body.fcn
 
+	if(!channelName){
+		res.json(getErrorMessage('\'channelName\''))
+		return
+	}
+	if(!chaincodeName){
+		res.json(getErrorMessage('\'chaincodeName\''))
+	}
+	if(!chaincodeType){
+		res.json(getErrorMessage('\'chaincodeType\''))
+	}
+	if(!chaincodeVersion){
+		res.json(getErrorMessage('\'chaincodeVersion\''))
+	}
+	let message = await instantiate.upgradeChaincode(peers, channelName, chaincodeName, chaincodeVersion, chaincodeType, args, fcn, req.username, req.orgname)
+	res.send(message)
+
+})
 
 //  Query Get Block by BlockNumber
 app.get('/channels/:channelName/blocks/:blockId', async function(req, res) {

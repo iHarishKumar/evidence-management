@@ -4,5 +4,8 @@ sample.yaml
 node_modules
 channel-artifacts
 fabric-client-kv-*
+postmanSamples.txt
+*.yamlt
 artifacts/network-config.yaml
-artifacts/network-config.yamlt
+docker-compose-e2e.yaml
+docker-compose-e2e.yamlt

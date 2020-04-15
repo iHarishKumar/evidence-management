@@ -52,8 +52,8 @@ function setChaincodePath(){
 
 setChaincodePath
 
-# #---------Enroll Users----------------
-# #---------Start-----------------------
+#---------Enroll Users----------------
+#---------Start-----------------------
 echo "POST request Enroll on Police  ..."
 echo
 POLICE_TOKEN=$(curl -s -X POST \
@@ -192,7 +192,7 @@ curl -s -X POST \
 	\"chaincodeName\":\"mycc\",
 	\"chaincodePath\":\"$CC_SRC_PATH\",
 	\"chaincodeType\": \"$LANGUAGE\",
-	\"chaincodeVersion\":\"v2\"
+	\"chaincodeVersion\":\"v1\"
 }"
 echo
 echo
@@ -208,7 +208,7 @@ curl -s -X POST \
 	\"chaincodeName\":\"mycc\",
 	\"chaincodePath\":\"$CC_SRC_PATH\",
 	\"chaincodeType\": \"$LANGUAGE\",
-	\"chaincodeVersion\":\"v2\"
+	\"chaincodeVersion\":\"v1\"
 }"
 echo
 echo
@@ -224,7 +224,7 @@ curl -s -X POST \
 	\"chaincodeName\":\"mycc\",
 	\"chaincodePath\":\"$CC_SRC_PATH\",
 	\"chaincodeType\": \"$LANGUAGE\",
-	\"chaincodeVersion\":\"v2\"
+	\"chaincodeVersion\":\"v1\"
 }"
 echo
 echo
@@ -240,7 +240,7 @@ curl -s -X POST \
 	\"chaincodeName\":\"mycc\",
 	\"chaincodePath\":\"$CC_SRC_PATH\",
 	\"chaincodeType\": \"$LANGUAGE\",
-	\"chaincodeVersion\":\"v2\"
+	\"chaincodeVersion\":\"v1\"
 }"
 echo
 echo
@@ -260,7 +260,7 @@ curl -s -X POST \
   -d '{
   "peers": ["peer0.police.example.com"],
 	"chaincodeName":"mycc",
-	"chaincodeVersion":"v2",
+	"chaincodeVersion":"v1",
 	"chaincodeType": "$LANGUAGE",
 	"args":["a","100","b","200"]
 }'
@@ -272,7 +272,7 @@ echo
 echo "POST invoke chaincode on peers of Forensics, Police, Court and Lawyers"
 echo
 curl -s -X POST \
-  http://localhost:4000/channels/mychannel/chaincodes/mycc \
+  http://localhost:4000/channels/mychannel/chaincodes/mycc?key=abc \
   -H "authorization: Bearer $POLICE_TOKEN" \
   -H "content-type: application/json" \
   -d '{

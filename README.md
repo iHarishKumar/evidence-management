@@ -24,9 +24,30 @@
 
   (To run this command, we need bash with 4.0+)
 
+* Once the above configuration is done, it's time to setup the Node SDK.
+
+  * Before we start the server, we need to write some config files so that the Node SDK will be able to interact with the Fabric without any problems.
+  * Firstly, create a folder `artifacts/ca-config` .
+  * Inside this folder, create `n` number of folders with org names. (`n` -> number of orgs)
+  * Inside every folder, include `fabric-ca-server-config.yaml` file with the appropriate contents.
+  * Also, create `n` number of files inside `artifacts` folder with `<orgname>.yaml` file name. (`n` -> number of orgs)
+
 * Now get the containers up by running the following command.
 
-  `./runApp.sh <ProjectName>`
+  `./restart.sh`
+
+* In the other command window, run the testAPI file which includes the steps for until invoking the chaincode.
+
+  `./testAPI.sh`
+
+# Version History
+
+### 1.1 Fetaures
+
+* Encrypt/Decrypt metadata.
+* Hash file data.
+* CounchDB add on
+* JWT Authentication
 
 
 

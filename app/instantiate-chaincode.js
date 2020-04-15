@@ -18,6 +18,22 @@ const util = require('util');
 const helper = require('./helper.js');
 const logger = helper.getLogger('instantiate-chaincode');
 
+var upgradeChaincode = async function(peers, channelName, chaincodeName, chaincodeVersion, chaincodeType, args, fcn, username, org_name){
+	var client = await helper.getClientForOrg(org_name, username)
+	let channel = client.getChannel(channelName)
+	let request = {
+		targets: peers,
+		chaincodeType: chaincodeType,
+		chaincodeId: chaincodeName,
+		chaincodeVersion: chaincodeVersion,
+		args: args,
+		fcn: fcn,
+		txId: client.newTransactionID(true)
+	}
+	let proposalResponse = await channel.sendUpgradeProposal(request, 6000000);
+	return proposalResponse.toString();
+}
+
 const instantiateChaincode = async function(peers, channelName, chaincodeName, chaincodeVersion, functionName, chaincodeType, args, username, org_name) {
 	logger.debug('\n\n============ Instantiate chaincode on channel ' + channelName +
 		' ============\n');
@@ -202,4 +218,6 @@ const instantiateChaincode = async function(peers, channelName, chaincodeName, c
 	};
 	return response;
 };
+
+exports.upgradeChaincode = upgradeChaincode;
 exports.instantiateChaincode = instantiateChaincode;
