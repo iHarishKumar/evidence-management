@@ -102,7 +102,7 @@ Organizations:
             # for cross org gossip communication.  Note, this value is only
             # encoded in the genesis block in the Application section context
             - Host: peer0.forensics.example.com
-              Port: 9051
+              Port: 7051
     
     - &Lawyers
         # DefaultOrg defines the organization which is used in the sampleconfig
@@ -133,7 +133,7 @@ Organizations:
             # for cross org gossip communication.  Note, this value is only
             # encoded in the genesis block in the Application section context
             - Host: peer0.lawyers.example.com
-              Port: 10051
+              Port: 7051
 
     - &Court
         # DefaultOrg defines the organization which is used in the sampleconfig
@@ -164,7 +164,7 @@ Organizations:
             # for cross org gossip communication.  Note, this value is only
             # encoded in the genesis block in the Application section context
             - Host: peer0.court.example.com
-              Port: 11051
+              Port: 7051
 
 ################################################################################
 #

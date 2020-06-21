@@ -27,6 +27,11 @@ var expressJWT = require('express-jwt');
 var jwt = require('jsonwebtoken');
 var bearerToken = require('express-bearer-token');
 var cors = require('cors');
+const {FileSystemWallet, X509WalletMixin, Gateway} = require('fabric-network')
+const gateway = new Gateway()
+var fs = require('fs')
+var fileSystemPath = require('path')
+var yaml = require('js-yaml')
 
 require('./config.js');
 var hfc = require('fabric-client');
@@ -313,15 +318,51 @@ app.post('/channels/:channelName/chaincodes/:chaincodeName', async function(req,
 		res.json(getErrorMessage('\'args\''));
 		return;
 	}
-	if(type === 'updateCaseStatus'){
-		let message = await await invoke.invokeChaincode(peers, channelName, chaincodeName, fcn, args, req.username, req.orgname)
-		res.send(message)
-	}
-	else{
+	if(type === 'uploadData'){
 		await convertArgs(args, req.headers.authorization.toString(), invoke.invokeChaincode, key, peers, channelName, chaincodeName, fcn, req.username, req.orgname, res)
+	}
+	else {
+		let message = await invoke.invokeChaincode(peers, channelName, chaincodeName, fcn, args, req.username, req.orgname)
+		res.send(message)
 	}
 
 });
+
+// Invoke private data set
+app.post('/channels/:channelName/chaincodes/:chaincodeName/privateData', async function(req, res) {
+	logger.debug('==================== INVOKE ON PRIVATEDATA ==================')
+	var channelName = req.params.channelName
+	var chaincodeName = req.params.chaincodeName
+	var fcn = req.body.fcn
+	var args = req.body.args
+	var peers = req.body.peers
+
+	logger.debug('channelName : ' + channelName)
+	logger.debug('chaincodeName : ' + chaincodeName)
+	logger.debug('fcn : ' + fcn)
+	logger.debug('collectionName : ' + args[1])
+	logger.debug('args : ' + args)
+	if (!chaincodeName) {
+		res.json(getErrorMessage('\'chaincodeName\''));
+		return;
+	}
+	if (!channelName) {
+		res.json(getErrorMessage('\'channelName\''));
+		return;
+	}
+	if (!fcn) {
+		res.json(getErrorMessage('\'fcn\''));
+		return;
+	}
+	if (!args) {
+		res.json(getErrorMessage('\'args\''));
+		return;
+	}
+	
+	let message = await invoke.invokeChaincode(peers, channelName, chaincodeName, fcn, args, req.username, req.orgname)
+	res.send(message)
+
+})
 // Query on chaincode on target peers
 app.get('/channels/:channelName/chaincodes/:chaincodeName', async function(req, res) {
 	logger.debug('==================== QUERY BY CHAINCODE ==================');
@@ -373,17 +414,17 @@ app.get('/channels/:channelName/chaincodes/:chaincodeName', async function(req, 
 			else{
 				var keyValue = Object.keys(val)
 				for(var i in keyValue){
-					if(keyValue[i].includes('ENCRYPT') || keyValue[i].includes('HASH')){
-						try{
-							var x = metadata.decryptMetadata(val[keyValue[i]], key)
-							var st = keyValue[i] + "_DECRYPT"
-							val[st] = JSON.parse(x)
-							
-						}catch(error){
-							console.log("Unable to parse json")
-							console.log(error)
-							continue
-						}
+					if(keyValue[i].includes('ENCRYPT')){
+							try{
+								var x = metadata.decryptMetadata(val[keyValue[i]], key)
+								var st = keyValue[i] + "_DECRYPT"
+								val[st] = JSON.parse(x)
+								
+							}catch(error){
+								console.log("Unable to parse json")
+								console.log(error)
+								continue
+							}
 					}
 					if(keyValue[i].includes['URL']){
 						fileURL = val[keyValue[i]]
@@ -399,7 +440,7 @@ app.get('/channels/:channelName/chaincodes/:chaincodeName', async function(req, 
 		// console.log('--------------------------------------------')
 		// console.log(val)
 		// console.log('--------------------------------------------')
-		await metadata.verify(res, val)
+		await metadata.verify(res, val, key)
 
 	}
 	else{
@@ -532,3 +573,93 @@ app.get('/channels', async function(req, res) {
 	let message = await query.getChannels(peer, req.username, req.orgname);
 	res.send(message);
 });
+
+
+app.post('/channels/:channelName/wallet/:username', async function(req, res) {
+	logger.debug('==============Initialising Wallet===========================')
+	let path = req.body.path
+	let username = req.params.username
+	let orgName = req.body.orgName
+
+	// if(fs.existsSync(path)){
+	// 	res.send({'Message': 'Wallet already present', 'Path': path})
+	// }
+	// else {
+		const wallet = new FileSystemWallet(path)
+		const identityLabel = username.toLowerCase() + '@' + orgName + '.example.com'
+		const hlfUserName = 'User1@' + orgName + '.example.com'
+		
+
+		try{
+			const credPath = fileSystemPath.join(__dirname, './crypto-config/peerOrganizations/'+ orgName +'.example.com/users/' + hlfUserName)
+			const keystoreBasePath = fileSystemPath.join(credPath, '/msp/keystore/')
+
+			var files = fs.readdirSync(keystoreBasePath)
+			
+			if(files.length > 1){
+				throw new Error('Directory is corrupt.')
+			}
+
+			const cert = fs.readFileSync(fileSystemPath.join(credPath,'/msp/signcerts/' + hlfUserName + '-cert.pem')).toString()
+			const key = fs.readFileSync(fileSystemPath.join(credPath, '/msp/keystore/'+files[0])).toString()
+
+			const identity = X509WalletMixin.createIdentity(orgName + 'MSP', cert, key)
+
+			let message = await wallet.import(identityLabel, identity)
+
+			let connProfile = yaml.safeLoad(fs.readFileSync(fileSystemPath.join(__dirname,'/artifacts/network-config.yaml'), 'utf-8'))
+
+
+			await gateway.connect(connProfile, { wallet, identity: identityLabel, discovery: { enabled: true, asLocalhost: false } });
+			const client = gateway.getClient();
+			const userTlsCert = await wallet.export(identityLabel);
+			client.setTlsClientCertAndKey(userTlsCert.certificate, userTlsCert.privateKey);
+			logger.debug(userTlsCert)
+
+			res.send({'Message': 'Wallet successfully created', 'Path': path})
+		} catch(error){
+			logger.debug('Error initialising the wallet')
+			logger.debug(error.message)
+			var handle = {
+				'Message': 'Unable to find the path specified',
+				'Path': path
+			}
+			res.status(404).json(handle)
+		}
+	//}
+
+})
+
+app.post('/channels/:channelName/wallet/:username/invoke', async function(req, res) {
+	logger.debug('==========Invoking Chaincode using wallet===================')
+
+	let path = req.body.path
+	let username = req.params.username
+	let orgname = req.body.orgName
+
+	const u =  username.toLowerCase() + '@' + orgname + '.example.com'
+	let connProfile = yaml.safeLoad(fs.readFileSync(fileSystemPath.join(__dirname,'/artifacts/network-config.yaml'), 'utf-8'))
+
+	const wallet = new FileSystemWallet(path)
+
+	let connOptions = {
+		identity: u,
+		wallet: wallet,
+		discovery: {enabled:false, asLocalhost:true}
+	}
+
+	await gateway.connect(connProfile, connOptions)
+
+	const client = gateway.getClient().setTlsClientCertAndKey
+
+	const network = await gateway.getNetwork('mychannel')
+
+	const contract = network.getContract('mycc')
+
+	const resp = await contract.submitTransaction('createCase', 'aserw', 'awegwe')
+
+	logger.debug('-----------',resp)
+
+	res.send(resp)
+
+})

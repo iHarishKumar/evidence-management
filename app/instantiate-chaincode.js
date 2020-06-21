@@ -76,7 +76,8 @@ const instantiateChaincode = async function(peers, channelName, chaincodeName, c
 			//         policy: {
 			// 		'2-of':[{ 'signed-by': 0 }, { 'signed-by': 1 }]
 			//         }
-		    //     }
+			//     }
+			'collections-config': "/Users/harishgunjalli/Desktop/HLF/project/evidence-management/artifacts/privateDataCollection.json"
 		};
 
 		if (functionName)

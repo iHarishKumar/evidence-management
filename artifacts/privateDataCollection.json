@@ -1,0 +1,98 @@
+[
+    {
+        "name": "collectionAccused",
+        "policy": {
+            "identities": [
+                {
+                    "role": {
+                        "name": "member",
+                        "mspId": "PoliceMSP"
+                    }
+                },
+                {
+                    "role": {
+                        "name": "member",
+                        "mspId": "CourtMSP"
+                    }
+                }
+            ],
+            "policy": {
+                "1-of": [
+                    {
+                        "signed-by": 0
+                    },
+                    {
+                        "signed-by": 1
+                    }
+                ]
+            }
+        },
+        "requiredPeerCount": 1,
+        "maxPeerCount": 2,
+        "blockToLive": 100
+    },
+    {
+        "name": "collectionVictim",
+        "policy": {
+            "identities": [
+                {
+                    "role": {
+                        "name": "member",
+                        "mspId": "PoliceMSP"
+                    }
+                },
+                {
+                    "role": {
+                        "name": "member",
+                        "mspId": "CourtMSP"
+                    }
+                }
+            ],
+            "policy": {
+                "1-of": [
+                    {
+                        "signed-by": 0
+                    },
+                    {
+                        "signed-by": 1
+                    }
+                ]
+            }
+        },
+        "requiredPeerCount": 1,
+        "maxPeerCount": 2,
+        "blockToLive": 100
+    },
+    {
+        "name": "collectionSuspect",
+        "policy": {
+            "identities": [
+                {
+                    "role": {
+                        "name": "member",
+                        "mspId": "PoliceMSP"
+                    }
+                },
+                {
+                    "role": {
+                        "name": "member",
+                        "mspId": "CourtMSP"
+                    }
+                }
+            ],
+            "policy": {
+                "1-of": [
+                    {
+                        "signed-by": 0
+                    },
+                    {
+                        "signed-by": 1
+                    }
+                ]
+            }
+        },
+        "requiredPeerCount": 1,
+        "maxPeerCount": 2,
+        "blockToLive": 100
+    }
+]

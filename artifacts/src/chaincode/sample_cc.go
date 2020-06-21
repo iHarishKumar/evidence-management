@@ -18,7 +18,7 @@ type Case_Asset struct {
 	Case_Name             string `json:"Case_Name"`
 	Case_Description      string `json:"Case_Description"`
 	Status                string `json:"Status"`
-	FIR_Image_URL         string `json:"FIR_Image_URL"`
+	DBCOLLECTION          string `json:"DBCOLLECTION"`
 	FIR_ENCRYPT           string `json:"FIR_ENCRYPT"`
 	FIR_METATDATA_ENCRYPT string `json:"FIR_METADATA_ENCRYPT"`
 	Date_Of_Creation      string `json:"Date_Of_Creation"`
@@ -31,7 +31,7 @@ type Case_Asset struct {
 type Document_Asset struct {
 	Document_Id               string `json:"Document_Id"`
 	Document_Description      string `json:"Document_Description"`
-	Document_URL              string `json:"Document_URL"`
+	DBCOLLECTION              string `json:"DBCOLLECTION"`
 	Document_ENCRYPT          string `json:"Document_HASH"`
 	Document_METADATA_ENCRYPT string `json:"Document_METADATA_HASH"`
 	Case_Id                   string `json:"Case_Id"`
@@ -43,21 +43,45 @@ type Document_Asset struct {
 type FIR_Asset struct {
 	FIR_ID            string `json:"FIR_ID"`
 	FIR_Description   string `json:"FIR_Description"`
-	FIR_URL           string `json:"FIR_URL"`
+	DBCOLLECTION      string `json:"DBCOLLECTION"`
 	FIR_DOC_HASH      string `json:"FIR_DOC_HASH"`
 	FIR_METADATA_HASH string `json:"FIR_METADATA_HASH"`
 	Case_Id           string `json:"Case_Id"`
 }
 
+type ACCUSED struct {
+	Name             string `json: "Name"`
+	ID               string `json: "ID"`
+	Photo            string `json: "Photo"`
+	Accused_For      string `json: "Accused_For"`
+	Term             string `json: "Term"`
+	Case_Id          string `json: "Case_Id"`
+	Serving_Sentence bool   `json: "Serving_Sentence"`
+	On_Bail          bool   `json: "On_Bail"`
+	Start_Date       string `json: "Start_Date"`
+}
+
+type SUSPECT struct {
+	Name        string `json: "Name"`
+	ID          string `json: "ID"`
+	Reason      string `json: "Reason"`
+	Case_Id     string `json: "Case_Id"`
+	Photo       string `json: "Photo"`
+	Description string `json: "Description"`
+	Notes       string `json: "Notes"`
+}
+
+type VICTIM struct {
+	Name        string `json: "Name"`
+	ID          string `json: "ID"`
+	Case_Id     string `json: "Case_Id"`
+	Photo       string `json: "Photo"`
+	IsAlive     bool   `json: "IsAlive"`
+	Description string `json: "Description"`
+	Report      string `json: "Report"`
+}
+
 type CounterNO struct {
-	Counter int `json:"counter"`
-}
-
-type DocumentNO struct {
-	Counter int `json:"counter"`
-}
-
-type FIRNo struct {
 	Counter int `json:"counter"`
 }
 
@@ -78,38 +102,20 @@ func main() {
 func (t *evidence_management) Init(APIstub shim.ChaincodeStubInterface) pb.Response {
 
 	// Initializing Case Counter
-	CaseCounterBytes, _ := APIstub.GetState("CaseCounterNO")
-	if CaseCounterBytes == nil {
-		var CaseCounter = CounterNO{Counter: 0}
-		CaseCounterBytes, _ := json.Marshal(CaseCounter)
-		err := APIstub.PutState("CaseCounterNO", CaseCounterBytes)
-		if err != nil {
-			return shim.Error(fmt.Sprintf("Failed to Initiate Case Counter"))
-		}
-	}
-
-	DocumentCounterBytes, _ := APIstub.GetState("DocumentCounterNo")
-	if DocumentCounterBytes == nil {
-		var DocumentCounter = DocumentNO{Counter: 0}
-		DocumentCounterBytes, _ := json.Marshal(DocumentCounter)
-		err := APIstub.PutState("DocumentCounterNo", DocumentCounterBytes)
-		if err != nil {
-			return shim.Error(fmt.Sprintf("Failed to Initiate Document Counter"))
-		}
-	}
-
-	FIRCounterBytes, _ := APIstub.GetState("FIRCounterNo")
-	if FIRCounterBytes == nil {
-		var FIRCounter = FIRNo{Counter: 0}
-		FIRCounterBytes, _ := json.Marshal(FIRCounter)
-		err := APIstub.PutState("FIRCounterNo", FIRCounterBytes)
-		if err != nil {
-			return shim.Error(fmt.Sprintf("Failed to Initiate FIR Counter"))
+	counter := [...]string{"CaseCounter", "DocumentCounter", "FIRCounter", "PDCounter", "AccusedCounter", "SuspectCounter", "VictimCounter"}
+	for _, element := range counter {
+		CounterBytes, _ := APIstub.GetState(element)
+		if CounterBytes == nil {
+			var count = CounterNO{Counter: 0}
+			counterBytes, _ := json.Marshal(count)
+			err := APIstub.PutState(element+"NO", counterBytes)
+			if err != nil {
+				return shim.Error(fmt.Sprintf("Failed to initiate %s counter", element))
+			}
 		}
 	}
 
 	return shim.Success(nil)
-
 }
 
 ///Start of Private Function
@@ -171,6 +177,16 @@ func (t *evidence_management) Invoke(stub shim.ChaincodeStubInterface) pb.Respon
 		return t.createFIR(stub, args)
 	} else if action == "createDoc" {
 		return t.createDoc(stub, args)
+	} else if action == "putPrivateData" {
+		return t.putPrivateData(stub, args)
+	} else if action == "getPrivateData" {
+		return t.getPrivateData(stub, args)
+	} else if action == "addAccused" {
+		return t.addAccused(stub, args)
+	} else if action == "addSuspect" {
+		return t.addSuspect(stub, args)
+	} else if action == "addVictim" {
+		return t.addVictim(stub, args)
 	}
 
 	fmt.Println("invoke did not find func: " + action) //error
@@ -265,6 +281,203 @@ func (t *evidence_management) queryAsset(APIstub shim.ChaincodeStubInterface, ar
 	return shim.Success(AssetAsBytes)
 }
 
+// Example for putting private data
+func (t *evidence_management) putPrivateData(APIstub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+	if len(args) != 2 {
+		return shim.Error("Incorrect number of arguments, Required 2")
+	}
+	PrDCounter := getCounter(APIstub, "PrDCounterNo")
+	PrDCounter++
+
+	PrDCounterBytes, err := json.Marshal(PrDCounter)
+
+	if err != nil {
+		return shim.Error("Failed to Marsha")
+	}
+
+	err1 := APIstub.PutPrivateData("collectionMedium", "abc"+strconv.Itoa(PrDCounter), PrDCounterBytes)
+
+	// Increment Private Data counter
+	incrementCounter(APIstub, "PrDCounterNo")
+
+	if err1 != nil {
+		return shim.Error("Something went wrong")
+	}
+	return shim.Success(nil)
+}
+
+func (t *evidence_management) addAccused(APIstub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+	if len(args) != 7 {
+		return shim.Error("Incorrect number of arguments, Required 7")
+	}
+
+	//To check each argument is not null
+	for i := 0; i < len(args); i++ {
+		if len(args[i]) <= 0 {
+			return shim.Error(string(i+1) + "st argument must be a non-empty string")
+		}
+	}
+
+	//err1 := APIstub.PutPrivateData("collectionMedium", "abc"+strconv.Itoa(PrDCounter), PrDCounterBytes)
+	CaseBytes, _ := APIstub.GetState(args[5])
+
+	CaseAsset := Case_Asset{}
+
+	json.Unmarshal(CaseBytes, &CaseAsset)
+
+	if CaseBytes == nil {
+		return shim.Error("Invalid Case Id")
+	}
+	AccusedCounter := getCounter(APIstub, "AccusedCounterNO")
+	AccusedCounter++
+
+	//To Get the transaction TimeStamp from the Channel Header
+	txTimeAsPtr, errTx := t.GetTxTimestampChannel(APIstub)
+	if errTx != nil {
+		return shim.Error("Returning error in Transaction TimeStamp")
+	}
+	// Checks are done and the counter is also ready. Create ACCUSED asset.
+	AccusedAsset := ACCUSED{ID: CaseAsset.Case_Id + "Accused" + strconv.Itoa(AccusedCounter), Case_Id: CaseAsset.Case_Id, Name: args[2], Photo: args[3], Accused_For: args[4], Term: args[6], Serving_Sentence: true, On_Bail: false, Start_Date: txTimeAsPtr}
+
+	AccusedAssetAsBytes, errMarshal := json.Marshal(AccusedAsset)
+
+	if errMarshal != nil {
+		return shim.Error(fmt.Sprintf("Marshal Error in Case: %s", errMarshal))
+	}
+
+	errPut := APIstub.PutPrivateData("collectionAccused", AccusedAsset.ID, AccusedAssetAsBytes)
+
+	if errPut != nil {
+		return shim.Error(fmt.Sprintf("Failed to create Case Asset: %s", AccusedAsset.ID))
+	}
+
+	//TO Increment the Case Counter
+	incrementCounter(APIstub, "AccusedCounterNO")
+
+	fmt.Println("Success in creating Case Asset %v", AccusedAsset)
+	return shim.Success(nil)
+
+}
+func (t *evidence_management) addSuspect(APIstub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+	if len(args) != 8 {
+		return shim.Error("Incorrect number of arguments, Required 8")
+	}
+
+	//To check each argument is not null
+	for i := 0; i < len(args); i++ {
+		if len(args[i]) <= 0 {
+			return shim.Error(string(i+1) + "st argument must be a non-empty string")
+		}
+	}
+
+	//err1 := APIstub.PutPrivateData("collectionMedium", "abc"+strconv.Itoa(PrDCounter), PrDCounterBytes)
+	CaseBytes, _ := APIstub.GetState(args[4])
+
+	CaseAsset := Case_Asset{}
+
+	json.Unmarshal(CaseBytes, &CaseAsset)
+
+	if CaseBytes == nil {
+		return shim.Error("Invalid Case Id")
+	}
+	SuspectCounter := getCounter(APIstub, "SuspectCounterNO")
+	SuspectCounter++
+
+	// Checks are done and the counter is also ready. Create Suspect asset.
+	SuspectAsset := SUSPECT{ID: CaseAsset.Case_Id + "Suspect" + strconv.Itoa(SuspectCounter), Case_Id: CaseAsset.Case_Id, Name: args[2], Reason: args[3], Photo: args[5], Description: args[6], Notes: args[7]}
+
+	SuspectAssetAsBytes, errMarshal := json.Marshal(SuspectAsset)
+
+	if errMarshal != nil {
+		return shim.Error(fmt.Sprintf("Marshal Error in Case: %s", errMarshal))
+	}
+
+	errPut := APIstub.PutPrivateData("collectionSuspect", SuspectAsset.ID, SuspectAssetAsBytes)
+
+	if errPut != nil {
+		return shim.Error(fmt.Sprintf("Failed to create Case Asset: %s", SuspectAsset.ID))
+	}
+
+	//TO Increment the Case Counter
+	incrementCounter(APIstub, "SuspectCounterNO")
+
+	fmt.Println("Success in creating Case Asset %v", SuspectAsset)
+	return shim.Success(nil)
+
+}
+
+func (t *evidence_management) addVictim(APIstub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+	if len(args) != 8 {
+		return shim.Error("Incorrect number of arguments, Required 2")
+	}
+
+	//To check each argument is not null
+	for i := 0; i < len(args); i++ {
+		if len(args[i]) <= 0 {
+			return shim.Error(string(i+1) + "st argument must be a non-empty string")
+		}
+	}
+
+	//err1 := APIstub.PutPrivateData("collectionMedium", "abc"+strconv.Itoa(PrDCounter), PrDCounterBytes)
+	CaseBytes, _ := APIstub.GetState(args[3])
+
+	CaseAsset := Case_Asset{}
+
+	json.Unmarshal(CaseBytes, &CaseAsset)
+
+	if CaseBytes == nil {
+		return shim.Error("Invalid Case Id")
+	}
+	SuspectCounter := getCounter(APIstub, "VictimCounterNO")
+	SuspectCounter++
+
+	val, errVal := strconv.ParseBool(args[5])
+	if errVal != nil {
+		return shim.Error("Error converting string to bool")
+	}
+	// Checks are done and the counter is also ready. Create Suspect asset.
+	VictimAsset := VICTIM{ID: CaseAsset.Case_Id + "Victim" + strconv.Itoa(SuspectCounter), Case_Id: CaseAsset.Case_Id, Name: args[2], Photo: args[4], IsAlive: val, Description: args[6], Report: args[7]}
+
+	VictimAssetAsBytes, errMarshal := json.Marshal(VictimAsset)
+
+	if errMarshal != nil {
+		return shim.Error(fmt.Sprintf("Marshal Error in Case: %s", errMarshal))
+	}
+
+	errPut := APIstub.PutPrivateData("collectionVictim", VictimAsset.ID, VictimAssetAsBytes)
+
+	if errPut != nil {
+		return shim.Error(fmt.Sprintf("Failed to create Case Asset: %s", VictimAsset.ID))
+	}
+
+	//TO Increment the Case Counter
+	incrementCounter(APIstub, "VictimCounterNO")
+
+	fmt.Println("Success in creating Case Asset %v", VictimAsset)
+	return shim.Success(nil)
+
+}
+
+func (t *evidence_management) getPrivateData(APIstub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+	if len(args) != 3 {
+		return shim.Error("Incorrect number of arguments, Required 2")
+	}
+
+	val, err := APIstub.GetPrivateData(args[2], args[2])
+
+	if err != nil {
+		return shim.Error("Error fetching private data from collection `collectionMedium`")
+	}
+
+	return shim.Success(val)
+
+}
+
 // update Case Attributes
 func (t *evidence_management) updateCase(APIstub shim.ChaincodeStubInterface, args []string) pb.Response {
 
@@ -295,7 +508,7 @@ func (t *evidence_management) updateCase(APIstub shim.ChaincodeStubInterface, ar
 	caseAsset.Case_Name = args[2]
 	caseAsset.Case_Description = args[3]
 	caseAsset.Status = args[4]
-	caseAsset.FIR_Image_URL = args[5]
+	caseAsset.DBCOLLECTION = args[5]
 	caseAsset.FIR_ENCRYPT = args[6]
 	caseAsset.FIR_METATDATA_ENCRYPT = args[7]
 	caseAsset.FIR_HASH = args[8]
@@ -345,7 +558,7 @@ func (t *evidence_management) createCase(APIstub shim.ChaincodeStubInterface, ar
 	if status != "CREATED" {
 		status = "CREATED"
 	}
-	var comAsset = Case_Asset{Case_Id: "Case" + strconv.Itoa(caseCounter), Case_Name: args[1], Case_Description: args[2], Status: status, FIR_Image_URL: args[4], FIR_ENCRYPT: args[5], FIR_METATDATA_ENCRYPT: args[6], Date_Of_Creation: txTimeAsPtr, FIR_HASH: args[7], FIR_METADATA_HASH: args[8], FIR_DATA_HASH: args[9]}
+	var comAsset = Case_Asset{Case_Id: "Case" + strconv.Itoa(caseCounter), Case_Name: args[1], Case_Description: args[2], Status: status, DBCOLLECTION: args[4], FIR_ENCRYPT: args[5], FIR_METATDATA_ENCRYPT: args[6], Date_Of_Creation: txTimeAsPtr, FIR_HASH: args[7], FIR_METADATA_HASH: args[8], FIR_DATA_HASH: args[9]}
 
 	comAssetAsBytes, errMarshal := json.Marshal(comAsset)
 
@@ -390,10 +603,10 @@ func (t *evidence_management) createFIR(APIstub shim.ChaincodeStubInterface, arg
 	caseAsset := Case_Asset{}
 
 	json.Unmarshal(caseBytes, &caseAsset)
-	firCounter := getCounter(APIstub, "FIRCounterNo")
+	firCounter := getCounter(APIstub, "FIRCounterNO")
 	firCounter++
 
-	firAsset := FIR_Asset{FIR_ID: "FIR" + strconv.Itoa(firCounter), FIR_Description: args[2], FIR_URL: args[3], FIR_DOC_HASH: args[4], FIR_METADATA_HASH: args[5], Case_Id: caseAsset.Case_Id}
+	firAsset := FIR_Asset{FIR_ID: "FIR" + strconv.Itoa(firCounter), FIR_Description: args[2], DBCOLLECTION: args[3], FIR_DOC_HASH: args[4], FIR_METADATA_HASH: args[5], Case_Id: caseAsset.Case_Id}
 
 	firAssetAsBytes, errMarshal := json.Marshal(firAsset)
 
@@ -406,7 +619,7 @@ func (t *evidence_management) createFIR(APIstub shim.ChaincodeStubInterface, arg
 	}
 
 	// Update counter state
-	incrementCounter(APIstub, "FIRCounterNo")
+	incrementCounter(APIstub, "FIRCounterNO")
 	fmt.Println("Success in creating FIR Asset %v", firAsset)
 
 	return shim.Success(nil)
@@ -434,10 +647,10 @@ func (t *evidence_management) createDoc(APIstub shim.ChaincodeStubInterface, arg
 	caseAsset := Case_Asset{}
 
 	json.Unmarshal(caseBytes, &caseAsset)
-	docCounter := getCounter(APIstub, "DocumentCounterNo")
+	docCounter := getCounter(APIstub, "DocumentCounterNO")
 	docCounter++
 
-	docAsset := Document_Asset{Document_Id: "Document" + strconv.Itoa(docCounter), Document_Description: args[2], Document_URL: args[3], Document_ENCRYPT: args[4], Document_METADATA_ENCRYPT: args[5], Case_Id: caseAsset.Case_Id, Document_HASH: args[6], Document_METADATA_HASH: args[7], Document_Data_HASH: args[8]}
+	docAsset := Document_Asset{Document_Id: "Document" + strconv.Itoa(docCounter), Document_Description: args[2], DBCOLLECTION: args[3], Document_ENCRYPT: args[4], Document_METADATA_ENCRYPT: args[5], Case_Id: caseAsset.Case_Id, Document_HASH: args[6], Document_METADATA_HASH: args[7], Document_Data_HASH: args[8]}
 
 	docAssetAsBytes, errMarshal := json.Marshal(docAsset)
 
@@ -450,7 +663,7 @@ func (t *evidence_management) createDoc(APIstub shim.ChaincodeStubInterface, arg
 	}
 
 	// Update counter state
-	incrementCounter(APIstub, "DocumentCounterNo")
+	incrementCounter(APIstub, "DocumentCounterNO")
 	fmt.Println("Success in creating Document Asset %v", docAsset)
 
 	return shim.Success(nil)

@@ -178,6 +178,61 @@ echo
 #---------Join Channel----------------
 #---------End-------------------------
 
+#---------Update Anchor Peers---------
+#---------Start-----------------------
+
+echo "POST request Update anchor peers on Court"
+echo
+curl -s -X POST \
+  http://localhost:4000/channels/mychannel/anchorpeers \
+  -H "authorization: Bearer $COURT_TOKEN" \
+  -H "content-type: application/json" \
+  -d '{
+	"configUpdatePath":"../channel-artifacts/CourtMSPAnchors.tx"
+}'
+echo
+echo
+
+echo "POST request Update anchor peers on Police"
+echo
+curl -s -X POST \
+  http://localhost:4000/channels/mychannel/anchorpeers \
+  -H "authorization: Bearer $POLICE_TOKEN" \
+  -H "content-type: application/json" \
+  -d '{
+	"configUpdatePath":"../channel-artifacts/PoliceMSPAnchors.tx"
+}'
+echo
+echo
+
+echo "POST request Update anchor peers on Forensics"
+echo
+curl -s -X POST \
+  http://localhost:4000/channels/mychannel/anchorpeers \
+  -H "authorization: Bearer $FORENSICS_TOKEN" \
+  -H "content-type: application/json" \
+  -d '{
+	"configUpdatePath":"../channel-artifacts/ForensicsMSPAnchors.tx"
+}'
+echo
+echo
+
+echo "POST request Update anchor peers on Lawyers"
+echo
+curl -s -X POST \
+  http://localhost:4000/channels/mychannel/anchorpeers \
+  -H "authorization: Bearer $LAWYERS_TOKEN" \
+  -H "content-type: application/json" \
+  -d '{
+	"configUpdatePath":"../channel-artifacts/LawyersMSPAnchors.tx"
+}'
+echo
+echo
+
+#---------Update Anchor Peers---------
+#---------Stop------------------------
+
+
 #---------Install Channel-------------
 #---------Start-----------------------
 
@@ -192,7 +247,7 @@ curl -s -X POST \
 	\"chaincodeName\":\"mycc\",
 	\"chaincodePath\":\"$CC_SRC_PATH\",
 	\"chaincodeType\": \"$LANGUAGE\",
-	\"chaincodeVersion\":\"v1\"
+	\"chaincodeVersion\":\"v2\"
 }"
 echo
 echo
@@ -208,7 +263,7 @@ curl -s -X POST \
 	\"chaincodeName\":\"mycc\",
 	\"chaincodePath\":\"$CC_SRC_PATH\",
 	\"chaincodeType\": \"$LANGUAGE\",
-	\"chaincodeVersion\":\"v1\"
+	\"chaincodeVersion\":\"v2\"
 }"
 echo
 echo
@@ -224,7 +279,7 @@ curl -s -X POST \
 	\"chaincodeName\":\"mycc\",
 	\"chaincodePath\":\"$CC_SRC_PATH\",
 	\"chaincodeType\": \"$LANGUAGE\",
-	\"chaincodeVersion\":\"v1\"
+	\"chaincodeVersion\":\"v2\"
 }"
 echo
 echo
@@ -240,7 +295,7 @@ curl -s -X POST \
 	\"chaincodeName\":\"mycc\",
 	\"chaincodePath\":\"$CC_SRC_PATH\",
 	\"chaincodeType\": \"$LANGUAGE\",
-	\"chaincodeVersion\":\"v1\"
+	\"chaincodeVersion\":\"v2\"
 }"
 echo
 echo
@@ -260,7 +315,7 @@ curl -s -X POST \
   -d '{
   "peers": ["peer0.police.example.com"],
 	"chaincodeName":"mycc",
-	"chaincodeVersion":"v1",
+	"chaincodeVersion":"v2",
 	"chaincodeType": "$LANGUAGE",
 	"args":["a","100","b","200"]
 }'
@@ -272,7 +327,7 @@ echo
 echo "POST invoke chaincode on peers of Forensics, Police, Court and Lawyers"
 echo
 curl -s -X POST \
-  http://localhost:4000/channels/mychannel/chaincodes/mycc?key=abc \
+  http://localhost:4000/channels/mychannel/chaincodes/mycc?key=abc&type=uploadData \
   -H "authorization: Bearer $POLICE_TOKEN" \
   -H "content-type: application/json" \
   -d '{
