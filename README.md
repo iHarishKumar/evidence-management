@@ -50,5 +50,8 @@
 * JWT Authentication.
 * Metadata extraction using Exiftool-Vendored.
 
-
-
+### 1.1 Features
+* Private data collection.
+* MongoDB for storing files.
+* Encrypting files stored on Mongodb.
+* Adding wallets to the configuration.
