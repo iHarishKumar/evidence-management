@@ -24,7 +24,7 @@
     "crypto-js": "^4.0.0",
     "exif-parser": "^0.1.12",
     "exiftool-vendored": "^10.0.0",
-    "express": "^4.15.2",
+    "express": "^4.17.3",
     "express-bearer-token": "^2.1.0",
     "express-jwt": "^5.1.0",
     "express-session": "^1.15.2",
